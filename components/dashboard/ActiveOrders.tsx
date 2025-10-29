@@ -1,7 +1,14 @@
 "use client"
-
+import { useState, useEffect } from "react"
 import { Clock, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+// Helper: convert "45m", "2h 30m", "8h" → seconds
+const parseTimeToSeconds = (time: string): number => {
+  const hours = time.match(/(\d+)h/)?.[1] ?? "0"
+  const minutes = time.match(/(\d+)m/)?.[1] ?? "0"
+  return parseInt(hours) * 3600 + parseInt(minutes) * 60
+}
 
 const activeOrders = [
   { id: "ORD-001", customer: "John Doe", time: "45m", priority: "urgent", status: "1h" },
@@ -11,6 +18,54 @@ const activeOrders = [
 ]
 
 export function ActiveOrders() {
+
+  // Store remaining seconds for each order
+  const [timeLeft, setTimeLeft] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {}
+    activeOrders.forEach((o) => {
+      init[o.id] = parseTimeToSeconds(o.time)
+    })
+    return init
+  })
+
+  // Countdown tick
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        const next = { ...prev }
+        let anyActive = false
+
+        activeOrders.forEach((order) => {
+          if (next[order.id] > 0) {
+            next[order.id] -= 1
+            anyActive = true
+          }
+        })
+
+        if (!anyActive) clearInterval(interval)
+        return next
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Format seconds → "Xm Ys" or "Overdue"
+  const formatTime = (seconds: number) => {
+    if (seconds <= 0) return <span className="text-red-600 font-bold">Overdue</span>
+
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+
+    const parts: string[] = []
+    if (h > 0) parts.push(`${h}h`)
+    if (m > 0) parts.push(`${m}m`)
+    if (s > 0 || parts.length === 0) parts.push(`${s}s`)
+
+    return <>{parts.join(" ")}</>
+  }
+
   const getPriorityClass = (priority: string) => {
     switch (priority) {
       case "urgent":
@@ -55,7 +110,7 @@ export function ActiveOrders() {
                   <p className={`text-sm font-bold ${getPriorityColor(order.priority)}`}>{order.status}</p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
                     <Clock className="w-3 h-3" />
-                    {order.time}
+                  {formatTime(timeLeft[order.id] ?? 0)}
                   </p>
                 </div>
               </div>
