@@ -14,9 +14,9 @@ import {
   Cell,
 } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ActiveOrders } from "./ActiveOrders"
-import { TopFlyers } from "./TopFlyers"
 
+import { TopFlyers } from "./top-flyers"
+import { ActiveOrders } from "./ActiveOrders"
 
 const dashboardData = {
   stats: [
@@ -117,7 +117,7 @@ export function Dashboard() {
 
       {/* Active Orders and Top Flyers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActiveOrders />
+        <ActiveOrders/>
         <TopFlyers />
       </div>
     </div>

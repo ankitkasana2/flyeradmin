@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 
-import { AdminLayout } from "@/components/layout/AdminLayout"
+import { AdminLayout } from "@/components/layout/admin-layout"
 import { LoginForm } from "@/components/auth/LoginForm"
-
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
