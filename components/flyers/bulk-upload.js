@@ -1,42 +1,24 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef } from "react"
 import { Upload, X, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface FlyerPreview {
-  id: string
-  file: File
-  preview: string
-  title: string
-  price: "$10" | "$15" | "$40"
-  formType: "With Photo" | "Only Info" | "Birthday"
-  categories: string[]
-  recentlyAdded: boolean
-}
-
-interface BulkUploadProps {
-  onClose: () => void
-  onUpload: (flyers: FlyerPreview[]) => void
-}
-
-export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
-  const [flyers, setFlyers] = useState<FlyerPreview[]>([])
+export function BulkUpload({ onClose, onUpload }) {
+  const [flyers, setFlyers] = useState([])
   const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef(null)
 
-  const priceOptions = ["$10", "$15", "$40"] as const
-  const formTypes = ["With Photo", "Only Info", "Birthday"] as const
+  const priceOptions = ["$10", "$15", "$40"]
+  const formTypes = ["With Photo", "Only Info", "Birthday"]
   const categories = ["Birthday", "Wedding", "Corporate", "Anniversary", "Graduation", "Party", "Event"]
 
-  const handleFileSelect = (files: FileList | null) => {
+  const handleFileSelect = (files) => {
     if (!files) return
 
-    const newFlyers: FlyerPreview[] = []
+    const newFlyers = []
     for (let i = 0; i < Math.min(files.length, 30 - flyers.length); i++) {
       const file = files[i]
       if (file.type.startsWith("image/")) {
@@ -45,7 +27,7 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
           newFlyers.push({
             id: `${Date.now()}-${i}`,
             file,
-            preview: e.target?.result as string,
+            preview: e.target?.result,
             title: file.name.replace(/\.[^/.]+$/, ""),
             price: "$10",
             formType: "Only Info",
@@ -62,7 +44,7 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e) => {
     e.preventDefault()
     setIsDragging(true)
   }
@@ -71,21 +53,21 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
     setIsDragging(false)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
     handleFileSelect(e.dataTransfer.files)
   }
 
-  const updateFlyer = (id: string, updates: Partial<FlyerPreview>) => {
+  const updateFlyer = (id, updates) => {
     setFlyers((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)))
   }
 
-  const removeFlyer = (id: string) => {
+  const removeFlyer = (id) => {
     setFlyers((prev) => prev.filter((f) => f.id !== id))
   }
 
-  const toggleCategory = (id: string, category: string) => {
+  const toggleCategory = (id, category) => {
     setFlyers((prev) =>
       prev.map((f) => {
         if (f.id === id) {
@@ -97,7 +79,7 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
           }
         }
         return f
-      }),
+      })
     )
   }
 
@@ -205,7 +187,7 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
                           <label className="text-xs font-medium text-muted-foreground">Price</label>
                           <select
                             value={flyer.price}
-                            onChange={(e) => updateFlyer(flyer.id, { price: e.target.value as "$10" | "$15" | "$40" })}
+                            onChange={(e) => updateFlyer(flyer.id, { price: e.target.value })}
                             className="w-full px-2 py-1 bg-input border border-border rounded text-foreground text-sm"
                           >
                             {priceOptions.map((price) => (
@@ -221,11 +203,7 @@ export function BulkUpload({ onClose, onUpload }: BulkUploadProps) {
                           <label className="text-xs font-medium text-muted-foreground">Form Type</label>
                           <select
                             value={flyer.formType}
-                            onChange={(e) =>
-                              updateFlyer(flyer.id, {
-                                formType: e.target.value as "With Photo" | "Only Info" | "Birthday",
-                              })
-                            }
+                            onChange={(e) => updateFlyer(flyer.id, { formType: e.target.value })}
                             className="w-full px-2 py-1 bg-input border border-border rounded text-foreground text-sm"
                           >
                             {formTypes.map((type) => (

@@ -2,12 +2,11 @@
 
 import { useState } from "react"
 import { Dashboard } from "../dashboard/Dashboard"
-import { FlyersManagement } from "../flyers/FlyersManagement"
 import { OrdersManagement } from "../orders/OrdersManagement"
 import { CarouselManagement } from "../carousel/CarouselManagement"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
-
+import { FlyersManagement } from "../flyers/flyers-management"
 
 interface AdminLayoutProps {
   userRole: "super-admin" | "admin" | "designer"

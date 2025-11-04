@@ -6,16 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface FlyerFormProps {
-  onClose: () => void
-}
-
-export function FlyerForm({ onClose }: FlyerFormProps) {
+export function FlyerForm({ onClose }) {
   const [formData, setFormData] = useState({
     title: "",
     price: "Basic",
     formType: "Info-only",
-    categories: [] as string[],
+    categories: [],
     recentlyAdded: false,
   })
 
@@ -28,7 +24,7 @@ export function FlyerForm({ onClose }: FlyerFormProps) {
   const formTypes = ["Info-only", "With-images", "Birthday"]
   const categories = ["Birthday", "Wedding", "Corporate", "Anniversary", "Graduation"]
 
-  const handleCategoryToggle = (category: string) => {
+  const handleCategoryToggle = (category) => {
     setFormData((prev) => ({
       ...prev,
       categories: prev.categories.includes(category)

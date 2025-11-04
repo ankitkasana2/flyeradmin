@@ -8,17 +8,13 @@ import { Input } from "@/components/ui/input"
 import { FlyerForm } from "./flyer-form"
 import { BulkUpload } from "./bulk-upload"
 
-interface FlyersManagementProps {
-  userRole: "super-admin" | "admin" | "designer"
-}
-
 const mockFlyers = [
   { id: 1, title: "Birthday Bash", price: "$10", category: "Birthday", status: "Active" },
   { id: 2, title: "Wedding Elegance", price: "$40", category: "Wedding", status: "Active" },
   { id: 3, title: "Corporate Pro", price: "$15", category: "Corporate", status: "Draft" },
 ]
 
-export function FlyersManagement({ userRole }: FlyersManagementProps) {
+export function FlyersManagement({ userRole }) {
   const [showForm, setShowForm] = useState(false)
   const [showBulkUpload, setShowBulkUpload] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -26,7 +22,7 @@ export function FlyersManagement({ userRole }: FlyersManagementProps) {
 
   const canEdit = userRole !== "designer"
 
-  const handleBulkUpload = (uploadedFlyers: any[]) => {
+  const handleBulkUpload = (uploadedFlyers) => {
     console.log("[v0] Bulk upload received:", uploadedFlyers)
     setShowBulkUpload(false)
     // TODO: Add API call to save flyers to database

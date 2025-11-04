@@ -8,6 +8,8 @@ import { CarouselManagement } from "@/components/carousel/carousel-management"
 import { Dashboard } from "../dashboard/Dashboard"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
+import LiveFlyers from "../liveFlyer/LiveFlyers"
+
 
 interface AdminLayoutProps {
   userRole: "super-admin" | "admin" | "designer"
@@ -29,6 +31,8 @@ export function AdminLayout({ userRole, onLogout }: AdminLayoutProps) {
         return <CarouselManagement userRole={userRole} />
       default:
         return <Dashboard />
+        case "liveflyer":
+        return <LiveFlyers />
     }
   }
 

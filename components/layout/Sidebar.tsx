@@ -14,6 +14,8 @@ export function Sidebar({ currentPage, onPageChange, userRole }: SidebarProps) {
     { id: "flyers", label: "Flyers", icon: FileText },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "carousel", label: "Carousels", icon: Layers },
+    { id: "liveflyer", label: "Live flyer", icon: Layers }, 
+
   ]
 
   // Filter menu items based on role
@@ -53,8 +55,10 @@ export function Sidebar({ currentPage, onPageChange, userRole }: SidebarProps) {
               <Icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
             </button>
+            
           )
         })}
+
       </nav>
 
       <div className="p-4 border-t border-sidebar-border space-y-2">
