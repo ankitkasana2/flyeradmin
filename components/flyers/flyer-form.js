@@ -73,7 +73,7 @@ export function FlyerForm({ onClose }) {
             </select>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Form Type</label>
             <select
               value={formData.formType}
@@ -86,7 +86,7 @@ export function FlyerForm({ onClose }) {
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Categories</label>

@@ -13,7 +13,39 @@ export function BulkUpload({ onClose, onUpload }) {
 
   const priceOptions = ["$10", "$15", "$40"]
   const formTypes = ["With Photo", "Only Info", "Birthday"]
-  const categories = ["Birthday", "Wedding", "Corporate", "Anniversary", "Graduation", "Party", "Event"]
+  const categories = ["Recently Added",
+    "Premium Flyers",
+    "Basic Flyers",
+    "DJ Image or Artist",
+    "Ladies Night",
+    "Brunch",
+    "Summer",
+    "Hookah Flyers",
+    "Clean Flyers",
+    "Drink Flyers",
+    "Birthday Flyers",
+    // Additional categories (rest of site & search)
+    "Beach Party",
+    "Pool Party",
+    "Tropical",
+    "Foam Party",
+    "White Party",
+    "All Black Party",
+    "Halloween",
+    "Winter",
+    "Christmas",
+    "Memorial Day",
+    "Back to School",
+    "President Day",
+    "Saint Valentine's Day",
+    "5 de Mayo",
+    "Mexican Day",
+    "4th of July",
+    "Autumn / Fall Vibes",
+    "Hip Hop Flyers",
+    "Luxury Flyers",
+    "Food Flyers",
+    "Party Flyers",]
 
   const handleFileSelect = (files) => {
     if (!files) return
@@ -110,9 +142,8 @@ export function BulkUpload({ onClose, onUpload }) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragging ? "border-[#E50914] bg-[#E50914]/5" : "border-border"
-            }`}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? "border-[#E50914] bg-[#E50914]/5" : "border-border"
+              }`}
           >
             <Upload className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
             <p className="text-foreground font-semibold mb-1">Drag and drop your flyers here</p>
@@ -158,40 +189,44 @@ export function BulkUpload({ onClose, onUpload }) {
             {/* Flyers Preview List */}
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {flyers.map((flyer) => (
-                <div key={flyer.id} className="p-4 bg-secondary rounded-lg border border-border">
+                <div
+                  key={flyer.id}
+                  className="p-4 bg-[#141414] rounded-lg border border-[#333] shadow-sm"
+                >
                   <div className="flex gap-4">
                     {/* Preview Image */}
                     <div className="flex-shrink-0">
                       <img
                         src={flyer.preview || "/placeholder.svg"}
                         alt={flyer.title}
-                        className="w-24 h-24 object-cover rounded border border-border"
+                        className="w-24 h-24 object-cover rounded border border-[#333]"
                       />
                     </div>
 
                     {/* Configuration Fields */}
                     <div className="flex-1 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-4">
+
                         {/* Title */}
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Title</label>
+                        <div className="flex flex-col">
+                          <label className="text-xs font-medium text-gray-300 mb-1">Title</label>
                           <Input
                             value={flyer.title}
                             onChange={(e) => updateFlyer(flyer.id, { title: e.target.value })}
-                            className="bg-input border-border text-foreground text-sm"
+                            className="bg-[#1F1F1F] border border-[#333] text-white text-sm px-2 py-1 rounded"
                           />
                         </div>
 
                         {/* Price Type */}
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Price</label>
+                        <div className="flex flex-col">
+                          <label className="text-xs font-medium text-gray-300 mb-1">Price</label>
                           <select
                             value={flyer.price}
                             onChange={(e) => updateFlyer(flyer.id, { price: e.target.value })}
-                            className="w-full px-2 py-1 bg-input border border-border rounded text-foreground text-sm"
+                            className="w-full px-2 py-1 bg-[#1F1F1F] border border-[#333] rounded text-white text-sm"
                           >
                             {priceOptions.map((price) => (
-                              <option key={price} value={price}>
+                              <option key={price} value={price} className="bg-[#1F1F1F] text-white">
                                 {price}
                               </option>
                             ))}
@@ -199,15 +234,15 @@ export function BulkUpload({ onClose, onUpload }) {
                         </div>
 
                         {/* Form Type */}
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Form Type</label>
+                        <div className="flex flex-col">
+                          <label className="text-xs font-medium text-gray-300 mb-1">Form Type</label>
                           <select
                             value={flyer.formType}
                             onChange={(e) => updateFlyer(flyer.id, { formType: e.target.value })}
-                            className="w-full px-2 py-1 bg-input border border-border rounded text-foreground text-sm"
+                            className="w-full px-2 py-1 bg-[#1F1F1F] border border-[#333] rounded text-white text-sm"
                           >
                             {formTypes.map((type) => (
-                              <option key={type} value={type}>
+                              <option key={type} value={type} className="bg-[#1F1F1F] text-white">
                                 {type}
                               </option>
                             ))}
@@ -215,51 +250,53 @@ export function BulkUpload({ onClose, onUpload }) {
                         </div>
 
                         {/* Recently Added */}
-                        <div className="flex items-end">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex flex-col justify-end">
+                          <label className="flex items-center gap-2 cursor-pointer mt-auto">
                             <input
                               type="checkbox"
                               checked={flyer.recentlyAdded}
                               onChange={(e) => updateFlyer(flyer.id, { recentlyAdded: e.target.checked })}
-                              className="w-4 h-4"
+                              className="w-4 h-4 rounded border-[#333] checked:bg-[#E50914] checked:border-[#E50914] checked:accent-[#E50914] focus:ring-0"
                             />
-                            <span className="text-xs font-medium text-foreground">Recently Added</span>
+                            <span className="text-xs font-medium text-white">Recently Added</span>
                           </label>
                         </div>
+
                       </div>
 
                       {/* Categories */}
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground block mb-2">Categories</label>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-300 mb-1">Category</label>
+                        <select
+                          value={flyer.categories[0] || ""}
+                          onChange={(e) => updateFlyer(flyer.id, { categories: [e.target.value] })}
+                          className="w-full px-2 py-1 bg-[#1F1F1F] border border-[#333] rounded text-white text-sm"
+                        >
+                          <option value="" className="bg-[#1F1F1F] text-white">
+                            Select category
+                          </option>
                           {categories.map((category) => (
-                            <button
-                              key={category}
-                              onClick={() => toggleCategory(flyer.id, category)}
-                              className={`px-2 py-1 rounded text-xs transition-colors ${
-                                flyer.categories.includes(category)
-                                  ? "bg-[#E50914] text-white"
-                                  : "bg-input border border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
+                            <option key={category} value={category} className="bg-[#1F1F1F] text-white">
                               {category}
-                            </button>
+                            </option>
                           ))}
-                        </div>
+                        </select>
                       </div>
                     </div>
 
                     {/* Remove Button */}
                     <button
                       onClick={() => removeFlyer(flyer.id)}
-                      className="flex-shrink-0 p-2 hover:bg-destructive/20 rounded transition-colors"
+                      className="flex-shrink-0 p-2 hover:bg-[#E50914]/20 rounded transition-colors"
                     >
-                      <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      <X className="w-4 h-4 text-gray-400 hover:text-[#E50914]" />
                     </button>
                   </div>
                 </div>
               ))}
             </div>
+
+
           </div>
         )}
 
