@@ -1,67 +1,61 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { type Flyer, getRibbons } from "@/lib/flyer-data"
-import { RibbonBadge } from "./ribbon-badge"
-import { Button } from "@/components/ui/button"
-import { Trash2, Edit } from "lucide-react"
+import Image from "next/image";
+import { Edit, Trash2 } from "lucide-react";
+import { type Flyer } from "@/lib/flyer-data";
 
 interface FlyerCardProps {
-  flyer: Flyer
-  onEdit: (flyer: Flyer) => void
-  onDelete: (flyer: Flyer) => void
+  flyer: Flyer;
+  onEdit: (flyer: Flyer) => void;
+  onDelete: (flyer: Flyer) => void;
 }
 
 export function FlyerCard({ flyer, onEdit, onDelete }: FlyerCardProps) {
-  const ribbons = getRibbons(flyer)
-
   return (
-    <div className="relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-card border border-border group">
-      {/* Ribbons Container */}
-      <div className="absolute top-3 left-3 space-y-1.5 z-10">
-        {ribbons.map((ribbon, idx) => (
-          <RibbonBadge key={idx} text={ribbon.text} color={ribbon.color} size={ribbon.size} />
-        ))}
-      </div>
-
-      <div className="absolute top-3 right-3 flex gap-2 opacity-100 z-20">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-md"
-          onClick={() => onEdit(flyer)}
-          title="Edit flyer"
-        >
-          <Edit className="h-4 w-4 text-blue-600" />
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 w-8 p-0 bg-white/90 hover:bg-red-100 shadow-md"
-          onClick={() => onDelete(flyer)}
-          title="Delete flyer"
-        >
-          <Trash2 className="h-4 w-4 text-red-600" />
-        </Button>
-      </div>
-
-      {/* Flyer Image */}
-      <div className="relative w-full h-48 overflow-hidden bg-muted">
+    <div className="relative group overflow-hidden rounded-xl bg-black/90 border border-neutral-800 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-red-900/30">
+      {/* Image */}
+      <div className="relative w-full aspect-[4/5]">
         <Image
-          src={flyer.image || "/placeholder.svg"}
+          src={flyer.image}
           alt={flyer.title}
           fill
-          className="object-cover hover:scale-105 transition-transform duration-300"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
         />
+
+        {/* Hover Buttons */}
+        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+          <button
+            onClick={() => onEdit(flyer)}
+            className="p-2 bg-black text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+            title="Edit Flyer"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onDelete(flyer)}
+            className="p-2 bg-black text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+            title="Delete Flyer"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Flyer Info */}
-      <div className="p-3 text-center border-t border-border">
-        <p className="font-semibold text-sm text-foreground truncate">{flyer.title}</p>
-        <p className="text-xs text-muted-foreground mt-1">${flyer.price}</p>
-        <p className="text-xs text-muted-foreground">{flyer.formType}</p>
+      {/* Info Section */}
+      <div className="bg-gradient-to-t from-black to-transparent px-4 py-3 text-center">
+        <p className="font-semibold text-white text-sm truncate">
+          {flyer.title}
+        </p>
+        <div className="flex justify-center items-center gap-3 mt-2 text-xs text-gray-300">
+          <span className="px-3 py-1 rounded-full bg-red-600/80 text-white font-medium shadow">
+            ${flyer.price}
+          </span>
+          <span className="px-3 py-1 rounded-full bg-neutral-800/80 text-white/80 font-medium">
+            {flyer.formType}
+          </span>
+        </div>
       </div>
     </div>
-  )
+  );
 }

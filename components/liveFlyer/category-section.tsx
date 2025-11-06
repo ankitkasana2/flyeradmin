@@ -1,86 +1,123 @@
-"use client"
+"use client";
 
-import type { Flyer } from "@/lib/flyer-data"
-import { FlyerCard } from "./flyer-card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { Flyer } from "@/lib/flyer-data";
+import { FlyerCard } from "./flyer-card";
 
 interface CategorySectionProps {
-  category: string
-  flyers: Flyer[]
-  onEdit: (flyer: Flyer) => void
-  onDelete: (flyer: Flyer) => void
+  category: string;
+  flyers: Flyer[];
+  onEdit: (flyer: Flyer) => void;
+  onDelete: (flyer: Flyer) => void;
 }
 
-export function CategorySection({ category, flyers, onEdit, onDelete }: CategorySectionProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [showLeftArrow, setShowLeftArrow] = useState(false)
-  const [showRightArrow, setShowRightArrow] = useState(true)
+export function CategorySection({
+  category,
+  flyers,
+  onEdit,
+  onDelete,
+}: CategorySectionProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [displayFlyers, setDisplayFlyers] = useState<Flyer[]>(flyers);
+
+  // Inject local images for "All" category
+  useEffect(() => {
+    if (category === "All") {
+      const localImages = [
+        "pic10.jpg",
+        "pic11.jpg",
+        "pic21.jpg",
+        "pic22.jpg",
+        "pic23.jpg",
+      ].map((img, i) => ({
+        id: `local-${i}`,
+        title: `Flyer ${i + 1}`,
+        price: 10 + i * 5,
+        formType: "With Image",
+        image: `/${img}`,
+      }));
+      setDisplayFlyers(localImages);
+    } else {
+      setDisplayFlyers(flyers);
+    }
+  }, [category, flyers]);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
-      setShowLeftArrow(scrollLeft > 0)
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10)
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setShowLeftArrow(scrollLeft > 0);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
     }
-  }
+  };
 
-  const scroll = (direction: "left" | "right") => {
+  const scroll = (dir: "left" | "right") => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 300
+      const scrollAmount = 300;
       scrollContainerRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
+        left: dir === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
-      })
+      });
     }
-  }
+  };
 
-  if (flyers.length === 0) return null
+  if (displayFlyers.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="border-l-4 border-primary pl-4">
-        <h2 className="text-2xl font-bold text-foreground">{category}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{flyers.length} flyers</p>
+    <section className="space-y-6">
+      {/* Section Header */}
+      <div className="flex items-end gap-4">
+        <div className="flex-1">
+          <h2 className="text-3xl font-black text-white tracking-tight">
+            {category}
+          </h2>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="h-1 w-12 bg-gradient-to-r from-red-600 to-red-400 rounded-full"></div>
+            <p className="text-sm font-medium text-gray-400">
+              {displayFlyers.length} flyers
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="relative">
-        {/* Left Arrow */}
+      {/* Scrollable Flyers */}
+      <div className="relative group">
         {showLeftArrow && (
           <button
             onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 shadow-2xl rounded-full p-3 transition-all duration-300 transform hover:scale-110"
             title="Scroll left"
           >
-            <ChevronLeft className="h-5 w-5 text-foreground" />
+            <ChevronLeft className="h-5 w-5 text-white" />
           </button>
         )}
 
-        {/* Horizontal Scroll Container */}
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
+          className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
           style={{ scrollBehavior: "smooth" }}
         >
-          {flyers.map((flyer) => (
-            <div key={flyer.id} className="flex-shrink-0 w-40">
+          {displayFlyers.map((flyer) => (
+            <div key={flyer.id} className="flex-shrink-0 w-52 sm:w-56 md:w-60">
               <FlyerCard flyer={flyer} onEdit={onEdit} onDelete={onDelete} />
             </div>
           ))}
         </div>
 
-        {/* Right Arrow */}
         {showRightArrow && (
           <button
             onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 shadow-2xl rounded-full p-3 transition-all duration-300 transform hover:scale-110"
             title="Scroll right"
           >
-            <ChevronRight className="h-5 w-5 text-foreground" />
+            <ChevronRight className="h-5 w-5 text-white" />
           </button>
         )}
       </div>
     </section>
-  )
+  );
 }
