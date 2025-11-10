@@ -45,14 +45,50 @@ export interface Flyer {
   recentlyAdded: boolean // added recently added flag
 }
 
+
+
 // Generate demo flyers - 4 per category
 export function generateDemoFlyers(): Flyer[] {
   const flyers: Flyer[] = []
   let id = 1
 
+  const demoImages = [
+    "/pic10.jpg",
+    "/pic11.jpg",
+    "/pic21.jpg",
+    "/pic22.jpg",
+    "/pic23.jpg",
+    "/pic24.jpg",
+    "/pic25.jpg",
+    "/pic26.jpg",
+    "/pic27.jpg",
+    "/pic28.jpg",
+    "/pic29.jpg",
+    "/pic30.jpg",
+    "/pic31.jpg",
+    "/pic32.jpg",
+    "/pic33.jpg",
+    "/pic34.jpg",
+    "/pic35.jpg",
+    "/pic36.jpg",
+    "/pic37.jpg",
+    "/pic38.jpg",
+    "/pic39.jpg",
+    "/pic40.jpg",
+    "/pic41.jpg",
+ 
+   
+
+  ]
+
   CATEGORIES.forEach((category) => {
     const prices: (10 | 15 | 40)[] = [10, 15, 40, 10]
-    const formTypes: ("With Image" | "Without Image")[] = ["With Image", "Without Image", "With Image", "With Image"]
+    const formTypes: ("With Image" | "Without Image")[] = [
+      "With Image",
+      "Without Image",
+      "With Image",
+      "With Image",
+    ]
 
     for (let i = 0; i < 4; i++) {
       flyers.push({
@@ -61,8 +97,8 @@ export function generateDemoFlyers(): Flyer[] {
         category,
         price: prices[i],
         formType: formTypes[i],
-        image: `/placeholder.svg?height=300&width=400&query=${category} flyer design ${i + 1}`,
-        recentlyAdded: i < 2, // first 2 flyers in each category marked as recently added
+        image: demoImages[i % demoImages.length],
+        recentlyAdded: i < 2,
       })
       id++
     }
