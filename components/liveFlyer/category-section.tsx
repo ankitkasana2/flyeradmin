@@ -23,28 +23,53 @@ export function CategorySection({
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [displayFlyers, setDisplayFlyers] = useState<Flyer[]>(flyers);
 
-  // Inject local images for "All" category
+  // ✅ Local image list for "All" category
+  const LOCAL_IMAGES = [
+    "/pic10.jpg",
+    "/pic11.jpg",
+    "/pic21.jpg",
+    "/pic22.jpg",
+    "/pic23.jpg",
+    "/pic24.jpg",
+    "/pic25.jpg",
+    "/pic26.jpg",
+    "/pic27.jpg",
+    "/pic28.jpg",
+    "/pic29.jpg",
+    "/pic30.jpg",
+    "/pic31.jpg",
+    "/pic32.jpg",
+    "/pic33.jpg",
+    "/pic34.jpg",
+    "/pic35.jpg",
+    "/pic36.jpg",
+    "/pic37.jpg",
+    "/pic38.jpg",
+    "/pic39.jpg",
+    "/pic40.jpg",
+    "/pic41.jpg",
+  ];
+
+  // ✅ Inject local demo flyers ONLY for the "All" category
   useEffect(() => {
     if (category === "All") {
-      const localImages = [
-        "pic10.jpg",
-        "pic11.jpg",
-        "pic21.jpg",
-        "pic22.jpg",
-        "pic23.jpg",
-      ].map((img, i) => ({
+      const localFlyers: Flyer[] = LOCAL_IMAGES.map((img, i) => ({
         id: `local-${i}`,
         title: `Flyer ${i + 1}`,
-        price: 10 + i * 5,
+        category: "All", // ✅ Required by Flyer interface
+        price: 10,       // ✅ Must be one of: 10 | 15 | 40
         formType: "With Image",
-        image: `/${img}`,
+        image: img,
+        recentlyAdded: false, // ✅ Required by Flyer interface
       }));
-      setDisplayFlyers(localImages);
+
+      setDisplayFlyers(localFlyers);
     } else {
       setDisplayFlyers(flyers);
     }
   }, [category, flyers]);
 
+  // Scroll logic
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } =
@@ -56,9 +81,8 @@ export function CategorySection({
 
   const scroll = (dir: "left" | "right") => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 300;
       scrollContainerRef.current.scrollBy({
-        left: dir === "left" ? -scrollAmount : scrollAmount,
+        left: dir === "left" ? -300 : 300,
         behavior: "smooth",
       });
     }
@@ -68,7 +92,7 @@ export function CategorySection({
 
   return (
     <section className="space-y-6">
-      {/* Section Header */}
+      {/* Header */}
       <div className="flex items-end gap-4">
         <div className="flex-1">
           <h2 className="text-3xl font-black text-white tracking-tight">
