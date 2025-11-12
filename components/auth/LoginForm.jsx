@@ -10,11 +10,39 @@ export function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [selectedRole, setSelectedRole] = useState("admin")
+  const [error, setError] = useState("")          // ✅ Added
+  const [loading, setLoading] = useState(false)   // ✅ Added
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (email && password) {
-      onLogin(selectedRole)
+    setError("")
+    setLoading(true)
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          role: selectedRole,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || "Login failed")
+
+      // Save token & user info
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
+
+      // Notify parent
+      onLogin(data.user.role)
+
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -22,6 +50,7 @@ export function LoginForm({ onLogin }) {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="grid md:grid-cols-2 w-full max-w-5xl h-[600px] rounded-xl overflow-hidden shadow-2xl">
 
+        {/* Left Section */}
         <div className="bg-black flex flex-col items-center justify-center p-10 space-y-2">
           <div className="relative w-52 h-52">
             <Image src="/logo.png" alt="Logo" fill className="object-contain" priority />
@@ -29,6 +58,7 @@ export function LoginForm({ onLogin }) {
           <p className="text-white text-lg font-semibold tracking-wider">Admin Panel</p>
         </div>
 
+        {/* Right Section */}
         <div className="bg-[#141414] flex items-center justify-center p-8 md:p-12">
           <Card className="w-full max-w-md bg-[#141414] border-0 shadow-none">
             <CardContent className="space-y-6">
@@ -75,12 +105,17 @@ export function LoginForm({ onLogin }) {
                   </select>
                 </div>
 
+                {/* ✅ Show error if any */}
+                {error && (
+                  <p className="text-red-500 text-center text-sm">{error}</p>
+                )}
+
                 <Button
                   type="submit"
                   className="w-full bg-[#E50914] hover:bg-[#C40812] text-white font-bold h-12 text-lg rounded-md transition-all"
-                  disabled={!email || !password}
+                  disabled={!email || !password || loading}
                 >
-                  Sign In
+                  {loading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
             </CardContent>
@@ -90,8 +125,3 @@ export function LoginForm({ onLogin }) {
     </div>
   )
 }
-
-
-
-
-  
