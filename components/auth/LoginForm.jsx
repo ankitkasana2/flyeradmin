@@ -5,46 +5,52 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
-
+import authStore from "../../stores/authStore";
 export function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [selectedRole, setSelectedRole] = useState("admin")
-  const [error, setError] = useState("")          // ✅ Added
-  const [loading, setLoading] = useState(false)   // ✅ Added
+  const [error, setError] = useState("")          
+  const [loading, setLoading] = useState(false)
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault()
+  //   setError("")
+  //   setLoading(true)
+
+  //   try {
+  //     const res = await fetch("http://localhost:5000/api/auth/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         email,
+  //         password,
+  //         role: selectedRole,
+  //       }),
+  //     })
+
+  //     const data = await res.json()
+  //     if (!res.ok) throw new Error(data.message || "Login failed")
+
+  //     // Save token & user info
+  //     localStorage.setItem("token", data.token)
+  //     localStorage.setItem("user", JSON.stringify(data.user))
+
+  //     // Notify parent
+  //     onLogin(data.user.role)
+
+  //   } catch (err) {
+  //     setError(err.message)
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+  
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    await authStore.login(email, password, selectedRole, onLogin);
+  };
 
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          role: selectedRole,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || "Login failed")
-
-      // Save token & user info
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-
-      // Notify parent
-      onLogin(data.user.role)
-
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -106,16 +112,19 @@ export function LoginForm({ onLogin }) {
                 </div>
 
                 {/* ✅ Show error if any */}
-                {error && (
+                {/* {error && (
                   <p className="text-red-500 text-center text-sm">{error}</p>
-                )}
+                )} */}
+                  {authStore.loading && <p>Loading...</p>}
+      {authStore.error && <p style={{ color: "red" }}>{authStore.error}</p>}      
 
                 <Button
                   type="submit"
                   className="w-full bg-[#E50914] hover:bg-[#C40812] text-white font-bold h-12 text-lg rounded-md transition-all"
                   disabled={!email || !password || loading}
                 >
-                  {loading ? "Signing In..." : "Sign In"}
+                   {authStore.loading ? "Logging in..." : "Login"}
+                  {/* {loading ? "Signing In..." : "Sign In"} */}
                 </Button>
               </form>
             </CardContent>

@@ -5,6 +5,7 @@ import { Search, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { OrderDetailPage } from "./order-detail-page"
 
 interface OrdersManagementProps {
   userRole: "super-admin" | "admin" | "designer"
@@ -20,6 +21,7 @@ const mockOrders = [
 export function OrdersManagement({ userRole }: OrdersManagementProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
+  const [selectedOrder, setSelectedOrder] = useState<(typeof mockOrders)[0] | null>(null)
 
   const statuses = ["All", "Completed", "Processing", "Pending"]
 
@@ -34,6 +36,10 @@ export function OrdersManagement({ userRole }: OrdersManagementProps) {
       default:
         return "bg-gray-900/30 text-gray-400"
     }
+  }
+
+  if (selectedOrder) {
+    return <OrderDetailPage selectedOrder={selectedOrder} onBack={() => setSelectedOrder(null)} />
   }
 
   return (
@@ -111,7 +117,12 @@ export function OrdersManagement({ userRole }: OrdersManagementProps) {
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">{order.date}</td>
                     <td className="py-3 px-4">
-                      <button className="text-primary hover:text-primary/80 font-medium text-sm">View Details</button>
+                      <button
+                        onClick={() => setSelectedOrder(order)}
+                        className="text-primary hover:text-primary/80 font-medium text-sm"
+                      >
+                        View Details
+                      </button>
                     </td>
                   </tr>
                 ))}

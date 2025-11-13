@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { generateDemoFlyers, CATEGORIES, type Flyer } from "@/lib/flyer-data";
+import { useEffect, useMemo, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { CATEGORIES, type Flyer } from "@/lib/flyer-data";
+import { flyerStore } from "@/stores/flyerStore";
 import { CategorySection } from "./category-section";
-
 import { DeleteFlyerDialog } from "./delete-flyer-dialog";
 import { Sparkles } from "lucide-react";
 import { EditFlyerModal } from "./edit-flyer-modal";
 
-export default function Home() {
-  const [flyers, setFlyers] = useState<Flyer[]>(generateDemoFlyers());
+const LiveFlyers = observer(() => {
   const [editingFlyer, setEditingFlyer] = useState<Flyer | null>(null);
   const [deletingFlyer, setDeletingFlyer] = useState<Flyer | null>(null);
   const [categoryChangeConfirm, setCategoryChangeConfirm] = useState<{
@@ -18,15 +18,18 @@ export default function Home() {
     newCategory: string;
   } | null>(null);
 
+  // Fetch flyers from API on mount
+  useEffect(() => {
+    flyerStore.fetchFlyers();
+  }, []);
+
   // Group flyers by category
-  const flyersByCategory = useMemo(
-    () =>
-      CATEGORIES.reduce((acc, category) => {
-        acc[category] = flyers.filter((f) => f.category === category);
-        return acc;
-      }, {} as Record<string, typeof flyers>),
-    [flyers]
-  );
+  const flyersByCategory = useMemo(() => {
+    return CATEGORIES.reduce((acc, category) => {
+      acc[category] = flyerStore.getFlyersByCategory(category);
+      return acc;
+    }, {} as Record<string, Flyer[]>);
+  }, [flyerStore.flyers]);
 
   const handleEditSave = (
     updatedFlyer: Flyer,
@@ -40,29 +43,21 @@ export default function Home() {
         newCategory,
       });
     } else {
-      setFlyers((prev) =>
-        prev.map((f) => (f.id === updatedFlyer.id ? updatedFlyer : f))
-      );
+      flyerStore.updateFlyer(updatedFlyer);
     }
     setEditingFlyer(null);
   };
 
   const confirmCategoryChange = () => {
     if (categoryChangeConfirm) {
-      setFlyers((prev) =>
-        prev.map((f) =>
-          f.id === categoryChangeConfirm.flyer.id
-            ? categoryChangeConfirm.flyer
-            : f
-        )
-      );
+      flyerStore.updateFlyer(categoryChangeConfirm.flyer);
       setCategoryChangeConfirm(null);
     }
   };
 
   const handleDelete = () => {
     if (deletingFlyer) {
-      setFlyers((prev) => prev.filter((f) => f.id !== deletingFlyer.id));
+      flyerStore.deleteFlyer(deletingFlyer.id);
       setDeletingFlyer(null);
     }
   };
@@ -100,6 +95,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Ribbon Guide */}
       <section className="bg-gradient-to-r from-primary/10 via-transparent to-primary/5 border-t border-primary/20 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold text-foreground mb-8">
@@ -196,4 +192,6 @@ export default function Home() {
       )}
     </main>
   );
-}
+});
+
+export default LiveFlyers;
