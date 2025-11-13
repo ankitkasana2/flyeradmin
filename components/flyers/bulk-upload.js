@@ -350,17 +350,74 @@ console.log("[v0] Parsed ankit kasana CSV rows:", rows);
     )
   }
 
-  const handleSave = () => {
-    if (flyers.length > 0) {
-      onUpload(flyers)
-      setFlyers([])
-      setUploadMode("image")
-      setMessage({
-        type: "success",
-        text: "All flyers have been uploaded successfully.",
-      })
+  // const handleSave = () => {
+  //   if (flyers.length > 0) {
+  //     onUpload(flyers)
+  //     setFlyers([])
+  //     setUploadMode("image")
+  //     setMessage({
+  //       type: "success",
+  //       text: "All flyers have been uploaded successfully.",
+  //     })
+  //   }
+  // }
+
+  const handleSave = async () => {
+  if (flyers.length === 0) return;
+
+  setIsLoading(true);
+  setMessage(null);
+
+  try {
+    // Prepare payload
+    const payload = flyers.map((flyer) => ({
+      title: flyer.title,
+      price: flyer.price,
+      formType: flyer.formType,
+      recentlyAdded: flyer.recentlyAdded,
+      categories: flyer.categories,
+      image_url: flyer.preview || "", // URL or base64
+      fileNameOriginal: flyer.fileNameOriginal || "",
+    }));
+
+    const response = await fetch("http://193.203.161.174:3007/api/flyers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ flyers: payload }),
+    });
+
+    // Read the raw text first
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text); // parse only if valid JSON
+    } catch {
+      throw new Error(`Invalid JSON response from server: ${text}`);
     }
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to upload flyers");
+    }
+
+    console.log("Upload result:", data);
+
+    setMessage({ type: "success", text: "All flyers have been uploaded successfully." });
+    setFlyers([]);
+    setUploadMode("image");
+  } catch (error) {
+    console.error("Upload error:", error);
+    setMessage({ type: "error", text: `Error uploading flyers: ${error.message}` });
+  } finally {
+    setIsLoading(false);
   }
+};
+
+
+
+
 
   const downloadSampleCSV = () => {
     const sampleCSV = `file_name_original,flyer_name,price,form_type,recently_added,category,image_url
