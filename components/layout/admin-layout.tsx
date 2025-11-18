@@ -5,6 +5,7 @@ import { useState } from "react"
 import { FlyersManagement } from "@/components/flyers/flyers-management"
 import { OrdersManagement } from "@/components/orders/orders-management"
 import { CarouselManagement } from "@/components/carousel/carousel-management"
+import { BannerManagement } from "@/components/banner/BannerManagement"
 import { Dashboard } from "../dashboard/Dashboard"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
@@ -20,21 +21,24 @@ export function AdminLayout({ userRole, onLogout }: AdminLayoutProps) {
   const [currentPage, setCurrentPage] = useState("dashboard")
 
   const renderPage = () => {
-    switch (currentPage) {
-      case "dashboard":
-        return <Dashboard />
-      case "flyers":
-        return <FlyersManagement userRole={userRole} />
-      case "orders":
-        return <OrdersManagement userRole={userRole} />
-      case "carousel":
-        return <CarouselManagement userRole={userRole} />
-      default:
-        return <Dashboard />
-        case "liveflyer":
-        return <LiveFlyers />
-    }
+  switch (currentPage) {
+    case "dashboard":
+      return <Dashboard />
+    case "flyers":
+      return <FlyersManagement userRole={userRole} />
+    case "orders":
+      return <OrdersManagement userRole={userRole} />
+    case "carousel":
+      return <CarouselManagement userRole={userRole} />
+    case "liveflyer":
+      return <LiveFlyers />
+    case "banner":                        
+      return <BannerManagement userRole={userRole} />  
+    default:
+      return <Dashboard />
   }
+}
+
 
   return (
     <div className="flex h-screen bg-background">

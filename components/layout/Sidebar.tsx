@@ -1,6 +1,6 @@
 "use client"
 
-import { LayoutDashboard, FileText, ShoppingCart, Layers, Settings } from "lucide-react"
+import { LayoutDashboard, FileText, ShoppingCart, Layers, RectangleHorizontal, Settings } from 'lucide-react'
 
 interface SidebarProps {
   currentPage: string
@@ -14,11 +14,10 @@ export function Sidebar({ currentPage, onPageChange, userRole }: SidebarProps) {
     { id: "flyers", label: "Flyers", icon: FileText },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "carousel", label: "Carousels", icon: Layers },
-    { id: "liveflyer", label: "Live flyer", icon: Layers }, 
-
+    { id: "liveflyer", label: "Live flyer", icon: Layers },     
+    { id: "banner", label: "Banner", icon: RectangleHorizontal },
   ]
 
-  // Filter menu items based on role
   const filteredItems = menuItems.filter((item) => {
     if (userRole === "designer" && item.id === "carousel") return false
     return true
@@ -46,19 +45,16 @@ export function Sidebar({ currentPage, onPageChange, userRole }: SidebarProps) {
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent"
-              }`}
+                }`}
             >
               <Icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
             </button>
-            
           )
         })}
-
       </nav>
 
       <div className="p-4 border-t border-sidebar-border space-y-2">
