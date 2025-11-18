@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { GripVertical, Plus, Trash2, Pin, PinOff } from "lucide-react"
+import { GripVertical, Plus, Trash2, Pin, PinOff, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -21,6 +21,8 @@ const mockCarousels = [
 export function CarouselManagement({ userRole }: CarouselManagementProps) {
   const [carousels, setCarousels] = useState(mockCarousels)
   const [draggedItem, setDraggedItem] = useState<number | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [formData, setFormData] = useState({ name: "", flyers: "" })
 
   const canEdit = userRole !== "designer"
 
@@ -50,6 +52,22 @@ export function CarouselManagement({ userRole }: CarouselManagementProps) {
     setCarousels(carousels.map((c) => (c.id === id ? { ...c, isPinned: !c.isPinned } : c)))
   }
 
+  const handleCreateCarousel = () => {
+    if (!formData.name.trim()) return
+    
+    const newCarousel = {
+      id: Math.max(...carousels.map(c => c.id), 0) + 1,
+      name: formData.name,
+      position: carousels.length + 1,
+      flyers: parseInt(formData.flyers) || 0,
+      isPinned: false
+    }
+    
+    setCarousels([...carousels, newCarousel])
+    setFormData({ name: "", flyers: "" })
+    setIsModalOpen(false)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -58,7 +76,10 @@ export function CarouselManagement({ userRole }: CarouselManagementProps) {
           <p className="text-muted-foreground">Manage homepage carousels and their order</p>
         </div>
         {canEdit && (
-          <Button className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2">
+          <Button 
+            className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2"
+            onClick={() => setIsModalOpen(true)}
+          >
             <Plus className="w-4 h-4" />
             New Carousel
           </Button>
@@ -79,9 +100,8 @@ export function CarouselManagement({ userRole }: CarouselManagementProps) {
                 onDragStart={() => handleDragStart(carousel.id)}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(carousel.id)}
-                className={`p-4 bg-secondary rounded-lg border border-border flex items-center justify-between ${
-                  canEdit ? "cursor-move hover:bg-secondary/80" : ""
-                } transition-colors`}
+                className={`p-4 bg-secondary rounded-lg border border-border flex items-center justify-between ${canEdit ? "cursor-move hover:bg-secondary/80" : ""
+                  } transition-colors`}
               >
                 <div className="flex items-center gap-4 flex-1">
                   {canEdit && <GripVertical className="w-5 h-5 text-muted-foreground" />}
@@ -141,8 +161,66 @@ export function CarouselManagement({ userRole }: CarouselManagementProps) {
               <input type="checkbox" defaultChecked className="w-5 h-5" />
             </div>
           </div>
+          <div className="flex justify-end mt-7">
+            <Button className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2">
+              Save
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="bg-card border-border w-full max-w-md mx-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-foreground">Create New Carousel</CardTitle>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-1 hover:bg-secondary rounded transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Carousel Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Featured Flyers"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Number of Flyers</label>
+                <input
+                  type="number"
+                  placeholder="e.g., 12"
+                  value={formData.flyers}
+                  onChange={(e) => setFormData({ ...formData, flyers: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                  className="border-border text-foreground hover:bg-secondary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-[#E50914] text-white hover:bg-[#C40812]"
+                  onClick={handleCreateCarousel}
+                >
+                  Create
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

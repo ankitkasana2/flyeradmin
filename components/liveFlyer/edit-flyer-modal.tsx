@@ -89,73 +89,70 @@ export function EditFlyerModal({
           </div>
 
           {/* Price Type */}
-          <div>
-            <label className="text-sm font-bold text-foreground block mb-3">
-              Flyer Price Type
-            </label>
-            <div className="flex gap-3">
-              {[10, 15, 40].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPrice(p as 10 | 15 | 40)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-all transform ${
-                    price === p
-                      ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg scale-105"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40"
-                  }`}
-                >
-                  ${p}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div>
+  <label className="text-sm font-bold text-foreground block mb-3">
+    Flyer Price Type
+  </label>
+  <div className="flex gap-4">
+    {[10, 15, 40].map((p) => (
+      <button
+        key={p}
+        onClick={() => setPrice(p as 10 | 15 | 40)}
+        className={`px-8 py-3 rounded-lg font-bold transition-all duration-200 transform active:scale-95 shadow-lg ${
+          price === p
+            ? "bg-red-600 hover:bg-red-700 active:bg-red-800 text-black"
+            : "bg-muted/50 text-muted-foreground hover:bg-muted/80 border border-border/40"
+        }`}
+      >
+        ${p}
+      </button>
+    ))}
+  </div>
+</div>
 
           {/* Form Type */}
-          <div>
-            <label className="text-sm font-bold text-foreground block mb-3">
-              Form Type
-            </label>
-            <div className="flex gap-3">
-              {["With Image", "Without Image"].map((type) => (
-                <button
-                  key={type}
-                  onClick={() =>
-                    setFormType(type as "With Image" | "Without Image")
-                  }
-                  className={`px-4 py-2 rounded-lg font-bold transition-all transform ${
-                    formType === type
-                      ? "bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground shadow-lg scale-105"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div>
+  <label className="text-sm font-bold text-foreground block mb-3">
+    Form Type
+  </label>
+  <div className="flex gap-4">
+    {["With Image", "Without Image"].map((type) => (
+      <button
+        key={type}
+        onClick={() => setFormType(type as "With Image" | "Without Image")}
+        className={`px-8 py-3 rounded-lg font-bold transition-all duration-200 transform active:scale-95 shadow-lg ${
+          formType === type
+            ? "bg-red-600 hover:bg-red-700 active:bg-red-800 text-black"
+            : "bg-muted/50 text-muted-foreground hover:bg-muted/80 border border-border/40"
+        }`}
+      >
+        {type}
+      </button>
+    ))}
+  </div>
+</div>
 
           {/* Categories - Clickable Tags */}
-          <div>
-            <label className="text-sm font-bold text-foreground mb-3 block">
-              Categories
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-2 rounded-lg text-sm font-bold transition-all transform ${
-                    selectedCategory === cat
-                      ? "bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg scale-105"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <div>
+  <label className="text-sm font-bold text-foreground mb-3 block">
+    Categories
+  </label>
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+    {CATEGORIES.map((cat) => (
+      <button
+        key={cat}
+        onClick={() => setSelectedCategory(cat)}
+        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 ${
+          selectedCategory === cat
+            ? "bg-red-600 text-black font-bold shadow-md"
+            : "bg-muted/50 text-muted-foreground hover:bg-muted/80 border border-border/40"
+        }`}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
+</div>
           {/* Recently Added Toggle */}
           <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/40">
             <label className="text-sm font-bold text-foreground">
@@ -163,11 +160,10 @@ export function EditFlyerModal({
             </label>
             <button
               onClick={() => setRecentlyAdded(!recentlyAdded)}
-              className={`px-4 py-2 rounded-lg font-bold transition-all transform ${
-                recentlyAdded
+              className={`px-4 py-2 rounded-lg font-bold transition-all transform ${recentlyAdded
                   ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg scale-105"
                   : "bg-muted text-muted-foreground border border-border/40"
-              }`}
+                }`}
             >
               {recentlyAdded ? "YES" : "NO"}
             </button>
@@ -191,7 +187,7 @@ export function EditFlyerModal({
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold shadow-lg"
+            className="bg-red-600 hover:bg-red-700 active:bg-red-800 active:scale-98 text-black font-bold shadow-lg transition-all duration-200"
           >
             Save Changes
           </Button>
