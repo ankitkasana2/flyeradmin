@@ -4,6 +4,7 @@ import type { Flyer } from "@/lib/flyer-data";
 class FlyerStore {
   flyers: Flyer[] = [];
   loading = false;
+    saving = false;
   error: string | null = null;
 
   constructor() {
@@ -43,10 +44,49 @@ class FlyerStore {
     }
   }
 
-  updateFlyer(updatedFlyer: Flyer) {
-    this.flyers = this.flyers.map(f =>
-      f.id === updatedFlyer.id ? updatedFlyer : f
-    );
+  // updateFlyer(updatedFlyer: Flyer) {
+  //   this.flyers = this.flyers.map(f =>
+  //     f.id === updatedFlyer.id ? updatedFlyer : f
+  //   );
+  // }
+   // ---------------------------------------------------------
+  // UPDATE FLYER (send to backend)
+  // ---------------------------------------------------------
+  async updateFlyer(updatedFlyer: Flyer) {
+    this.saving = true;
+    this.error = null;
+
+    try {
+      const res = await fetch(
+        `http://193.203.161.174:3007/api/flyers/${updatedFlyer.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedFlyer),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Update failed");
+
+      // Update locally
+      runInAction(() => {
+        this.flyers = this.flyers.map((f) =>
+          f.id === updatedFlyer.id ? updatedFlyer : f
+        );
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message;
+      });
+      return { success: false, error: err.message };
+    } finally {
+      runInAction(() => {
+        this.saving = false;
+      });
+    }
   }
 
   deleteFlyer(flyerId: string) {
