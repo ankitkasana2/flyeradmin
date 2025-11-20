@@ -1,5 +1,6 @@
 // stores/ordersStore.ts
 import { makeAutoObservable, runInAction } from "mobx"
+import { apiUrl } from "@/lib/api"
 
 type DeliveryType = "1H" | "5H" | "24H"
 type OrderStatus = "Pending" | "Processing" | "Completed"
@@ -61,7 +62,7 @@ class OrdersStore {
       this.loading = true
       this.error = null
 
-      const response = await fetch('http://193.203.161.174:3007/api/orders')
+      const response = await fetch(apiUrl("/orders"))
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
       const data = await response.json()
@@ -88,7 +89,7 @@ class OrdersStore {
     order.status = newStatus
 
     try {
-      await fetch(`http://193.203.161.174:3007/api/orders/${orderId.replace('ORD-', '')}`, {
+      await fetch(apiUrl(`/orders/${orderId.replace('ORD-', '')}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus.toLowerCase() })

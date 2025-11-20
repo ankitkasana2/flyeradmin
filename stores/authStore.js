@@ -1,4 +1,5 @@
 import { makeAutoObservable } from "mobx";
+import { apiUrl } from "@/lib/api";
 
 class AuthStore {
   user = null;
@@ -23,7 +24,7 @@ class AuthStore {
     this.error = "";
 
     try {
-      const res = await fetch("http://193.203.161.174:3007/api/auth/login", {
+      const res = await fetch(apiUrl("/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role }),

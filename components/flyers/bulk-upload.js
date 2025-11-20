@@ -5,6 +5,7 @@ import { Upload, X, Save, Download, CheckCircle2, AlertCircle } from "lucide-rea
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { apiUrl } from "@/lib/api"
 
 export function BulkUpload({ onClose, onUpload }) {
   const [flyers, setFlyers] = useState([])
@@ -380,7 +381,7 @@ console.log("[v0] Parsed ankit kasana CSV rows:", rows);
       fileNameOriginal: flyer.fileNameOriginal || "",
     }));
 
-    const response = await fetch("http://193.203.161.174:3007/api/flyers", {
+    const response = await fetch(apiUrl("/flyers"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

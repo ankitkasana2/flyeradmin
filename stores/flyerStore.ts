@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import type { Flyer } from "@/lib/flyer-data";
+import { apiUrl } from "@/lib/api";
 
 class FlyerStore {
   flyers: Flyer[] = [];
@@ -16,7 +17,7 @@ class FlyerStore {
     this.error = null;
 
     try {
-      const res = await fetch("http://193.203.161.174:3007/api/flyers");
+      const res = await fetch(apiUrl("/flyers"));
       if (!res.ok) throw new Error("Failed to fetch flyers");
       const data = await res.json();
 
@@ -57,14 +58,11 @@ class FlyerStore {
     this.error = null;
 
     try {
-      const res = await fetch(
-        `http://193.203.161.174:3007/api/flyers/${updatedFlyer.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedFlyer),
-        }
-      );
+      const res = await fetch(apiUrl(`/flyers/${updatedFlyer.id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedFlyer),
+      });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Update failed");
