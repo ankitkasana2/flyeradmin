@@ -1,0 +1,206 @@
+// stores/ordersStore.ts
+import { makeAutoObservable, runInAction } from "mobx"
+
+type DeliveryType = "1H" | "5H" | "24H"
+type OrderStatus = "Pending" | "Processing" | "Completed"
+
+interface Flyer {
+  id: string
+  name?: string
+  fileName?: string
+  delivery: DeliveryType
+}
+
+export interface Order {
+  id: string
+  email: string
+  whatsapp?: string
+  flyers: Flyer[]
+  createdAt: string
+  status: OrderStatus
+}
+
+const DELIVERY_PRIORITY_MAP: Record<DeliveryType, number> = {
+  "1H": 1,
+  "5H": 2,
+  "24H": 3,
+}
+
+class OrdersStore {
+  orders: Order[] = []
+  loading = true
+  error: string | null = null
+  searchTerm = ""
+  statusFilter: "All" | OrderStatus = "All"
+  selectedOrder: Order | null = null
+  now = Date.now()
+
+  constructor() {
+    makeAutoObservable(this, {}, { autoBind: true })
+
+    // Real-time clock
+    setInterval(() => {
+      this.now = Date.now()
+    }, 1000)
+  }
+
+  setSearchTerm(term: string) {
+    this.searchTerm = term
+  }
+
+  setStatusFilter(filter: "All" | OrderStatus) {
+    this.statusFilter = filter
+  }
+
+  setSelectedOrder(order: Order | null) {
+    this.selectedOrder = order
+  }
+
+  async fetchOrders() {
+    try {
+      this.loading = true
+      this.error = null
+
+      const response = await fetch('http://193.203.161.174:3007/api/orders')
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+      const data = await response.json()
+      const apiOrders = data.orders || []
+
+      const transformed = apiOrders.map(transformApiOrder)
+
+      runInAction(() => {
+        this.orders = transformed
+        this.loading = false
+      })
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message || "Failed to fetch orders"
+        this.loading = false
+      })
+    }
+  }
+
+  async updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+    const order = this.orders.find(o => o.id === orderId)
+    if (!order) return
+
+    order.status = newStatus
+
+    try {
+      await fetch(`http://193.203.161.174:3007/api/orders/${orderId.replace('ORD-', '')}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus.toLowerCase() })
+      })
+    } catch (err) {
+      console.error("Failed to update status", err)
+      // Optionally revert on failure
+    }
+  }
+
+  get visibleOrders() {
+    const filtered = this.orders.filter(order => {
+      if (this.statusFilter !== "All" && order.status !== this.statusFilter) return false
+
+      const q = this.searchTerm.trim().toLowerCase()
+      if (!q) return true
+
+      const matchesOrder = order.id.toLowerCase().includes(q) ||
+        order.email.toLowerCase().includes(q) ||
+        (order.whatsapp || "").toLowerCase().includes(q)
+
+      const matchesFlyer = order.flyers.some(f =>
+        (f.name || "").toLowerCase().includes(q) ||
+        (f.fileName || "").toLowerCase().includes(q)
+      )
+
+      return matchesOrder || matchesFlyer
+    })
+
+    const active: Order[] = []
+    const completed: Order[] = []
+
+    filtered.forEach(order => {
+      if (order.status === "Completed") completed.push(order)
+      else active.push(order)
+    })
+
+    active.sort((a, b) => {
+      const aInfo = this.getOrderPriority(a)
+      const bInfo = this.getOrderPriority(b)
+
+      if (aInfo.remainingMs <= 0 && bInfo.remainingMs > 0) return -1
+      if (aInfo.remainingMs > 0 && bInfo.remainingMs <= 0) return 1
+
+      const priDiff = DELIVERY_PRIORITY_MAP[aInfo.fastest as DeliveryType] - DELIVERY_PRIORITY_MAP[bInfo.fastest as DeliveryType]
+      if (priDiff !== 0) return priDiff
+
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
+
+    completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return { active, completed }
+  }
+
+  getOrderPriority(order: Order) {
+    if (order.status === "Completed") return { fastest: "Completed" as const, remainingMs: 0 }
+
+    const fastest = order.flyers.reduce((acc, f) =>
+      DELIVERY_PRIORITY_MAP[f.delivery] < DELIVERY_PRIORITY_MAP[acc] ? f.delivery : acc
+    , order.flyers[0]?.delivery || "24H")
+
+    const hours = fastest === "1H" ? 1 : fastest === "5H" ? 5 : 24
+    const deadline = new Date(order.createdAt).getTime() + hours * 3600000
+    const remainingMs = deadline - this.now
+
+    return { fastest, remainingMs }
+  }
+}
+
+// Transform function (same as before)
+function transformApiOrder(apiOrder: any): Order {
+  const delivery = parseDeliveryTime(apiOrder.delivery_time)
+
+  const flyers: Flyer[] = [
+    {
+      id: `F-${apiOrder.id}`,
+      name: apiOrder.event_title || "Event Flyer",
+      fileName: apiOrder.flyer_info ? `${apiOrder.flyer_info}.jpg` : "default_flyer.jpg",
+      delivery,
+    },
+    ...(apiOrder.story_size_version === 1 ? [{
+      id: `F-S-${apiOrder.id}`,
+      name: "Story Size",
+      fileName: "story_version.jpg",
+      delivery,
+    }] : []),
+  ]
+
+  return {
+    id: `ORD-${apiOrder.id}`,
+    email: apiOrder.email || `order${apiOrder.id}@example.com`,
+    whatsapp: undefined,
+    flyers,
+    createdAt: new Date(apiOrder.created_at).toISOString(),
+    status: capitalizeStatus(apiOrder.status),
+  }
+}
+
+function parseDeliveryTime(deliveryStr: string | null): DeliveryType {
+  if (!deliveryStr) return "24H"
+  if (deliveryStr.includes("1 Hour") || deliveryStr.includes("1H")) return "1H"
+  if (deliveryStr.includes("5 Hours") || deliveryStr.includes("5H")) return "5H"
+  return "24H"
+}
+
+function capitalizeStatus(status: string): OrderStatus {
+  return (status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()) as OrderStatus
+}
+
+export const ordersStore = new OrdersStore()
+
+// Auto-fetch on start
+ordersStore.fetchOrders()
+setInterval(() => ordersStore.fetchOrders(), 30000)
