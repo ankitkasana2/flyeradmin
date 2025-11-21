@@ -1,203 +1,314 @@
-"use client"
+"use client";
 
-import { observer } from "mobx-react-lite"
-import { Search, Filter } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { ordersStore } from "@/stores/ordersStore"
-import { OrderDetailPage } from "./order-detail-page"
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed": return "bg-green-100 text-green-900"
-    case "Processing": return "bg-yellow-100 text-yellow-900"
-    case "Pending": return "bg-red-100 text-red-900"
-    default: return "bg-gray-200 text-black"
-  }
-}
-
-const getPriorityBadgeClass = (fastest: string) => {
-  switch (fastest) {
-    case "1H": return "bg-[#FF4D4F] text-white"
-    case "5H": return "bg-[#FF8C3A] text-white"
-    case "24H": return "bg-[#3B82F6] text-white"
-    case "Completed": return "bg-green-600 text-white"
-    default: return "bg-gray-200 text-black"
-  }
-} 
+import { useState, useEffect } from "react";
+import { observer } from "mobx-react-lite";
+import { Search, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ordersStore } from "@/stores/ordersStore";
+import { OrderDetailPage } from "./order-detail-page";
 
 const msToHMS = (ms: number) => {
-  if (ms <= 0) return "00:00:00"
-  const total = Math.floor(ms / 1000)
-  const hrs = Math.floor(total / 3600)
-  const mins = Math.floor((total % 3600) / 60)
-  const secs = total % 60
-  const two = (n: number) => n.toString().padStart(2, "0")
-  return `${two(hrs)}:${two(mins)}:${two(secs)}`
-}
+  if (ms <= 0) return "00:00:00";
+  const total = Math.floor(ms / 1000);
+  const hrs = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  const two = (n: number) => n.toString().padStart(2, "0");
+  return `${two(hrs)}:${two(mins)}:${two(secs)}`;
+};
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString()
-
+const formatDate = (iso: string) => new Date(iso).toLocaleString();
 
 export const OrdersManagement = observer(() => {
-  const { loading, error, searchTerm, statusFilter, selectedOrder, visibleOrders, setSearchTerm, setStatusFilter, setSelectedOrder } = ordersStore
+  const {
+    loading,
+    error,
+    searchTerm,
+    statusFilter,
+    selectedOrder,
+    visibleOrders,
+    setSearchTerm,
+    setStatusFilter,
+    setSelectedOrder,
+    updateOrderStatus,
+  } = ordersStore;
+
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   if (selectedOrder) {
-    return <OrderDetailPage selectedOrder={selectedOrder} onBack={() => setSelectedOrder(null)} />
+    return (
+      <OrderDetailPage
+        selectedOrder={selectedOrder}
+        onBack={() => setSelectedOrder(null)}
+      />
+    );
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading orders...</div>
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-2 border-border rounded-full animate-spin mx-auto border-t-primary"></div>
+          <p className="text-sm font-medium text-muted-foreground">
+            Loading orders...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64 flex-col gap-4">
-        <div className="text-red-600">{error}</div>
-        <button onClick={() => ordersStore.fetchOrders()} className="text-blue-600 underline">Retry</button>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-4 max-w-md p-8">
+          <h2 className="text-lg font-bold text-foreground">
+            Unable to Load Orders
+          </h2>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <button
+            onClick={() => ordersStore.fetchOrders()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded font-medium hover:bg-primary/90 transition-all"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Orders Management</h1>
-        <p className="text-muted-foreground">View and manage all customer orders — sorted by priority</p>
+    <div className="min-h-screen bg-background p-6 space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          Orders
+        </h1>
+        <p className="text-sm text-muted-foreground font-light">
+          Manage and track all orders in real-time
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Orders</CardTitle>
-          <CardDescription>Search, filter and update order status</CardDescription>
+      <Card className="border border-border bg-card">
+        <CardHeader className="border-b border-border pb-4">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-foreground tracking-tight">
+              Active Orders
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              {visibleOrders.active.length} active ·{" "}
+              {visibleOrders.completed.length} completed
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4 mb-6">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by email, order ID, WhatsApp, flyer name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" /> Filters
-              </Button>
+
+        <CardContent className="space-y-6 pt-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by email, phone, order ID, flyer or file name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary/50 text-sm"
+              />
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                {["All", "Pending", "Processing", "Completed"].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setStatusFilter(s as any)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      statusFilter === s
-                        ? "bg-[#E50914] text-white"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-              <div className="ml-auto text-sm text-muted-foreground">
-                Showing <strong>{visibleOrders.active.length}</strong> active — <strong>{visibleOrders.completed.length}</strong> completed
-              </div>
+            <div className="flex gap-2 flex-wrap">
+              {["All", "1H", "5H", "24H", "Completed"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s as any)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+                    statusFilter === s
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Active Orders Table */}
-          <div className="overflow-x-auto">
+          <div className="border border-border rounded overflow-hidden">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Order ID</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Email / WhatsApp</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Flyers</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Delivery</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Priority</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Countdown</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Date</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Action</th>
+              <thead className="bg-secondary/30 border-b border-border">
+                <tr>
+                  <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Order ID
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Customer
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Flyers
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Priority
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Countdown
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Status
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                    Action
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {visibleOrders.active.map((order) => {
-                  const { fastest, remainingMs } = ordersStore.getOrderPriority(order)
-                  const isExpired = remainingMs <= 0
+                  const { fastest, remainingMs } =
+                    ordersStore.getOrderPriority(order);
+                  const isExpired = remainingMs <= 0 && fastest !== "Completed";
+
+                  const getPriorityDisplay = () => {
+                    switch (fastest) {
+                      case "1H":
+                        return { label: "1H", color: "text-primary font-bold" };
+                      case "5H":
+                        return {
+                          label: "5H",
+                          color: "text-foreground font-semibold",
+                        };
+                      case "24H":
+                        return { label: "24H", color: "text-muted-foreground" };
+                      default:
+                        return {
+                          label: fastest,
+                          color: "text-muted-foreground",
+                        };
+                    }
+                  };
+
+                  const priority = getPriorityDisplay();
 
                   return (
-                    <tr key={order.id} className={`border-b ${isExpired ? "bg-red-100/30 animate-pulse" : "hover:bg-secondary/50"}`}>
-                      <td className="py-3 px-4 font-semibold">{order.id}</td>
-                      <td className="py-3 px-4">
-                        <div>{order.email}</div>
-                        <div className="text-xs text-muted-foreground">{order.whatsapp ?? "No WhatsApp"}</div>
+                    <tr
+                      key={order.id}
+                      onClick={() => setSelectedOrder(order)}
+                      className={`table-row-hover cursor-pointer ${
+                        isExpired ? "gentle-pulse bg-primary/5" : ""
+                      }`}
+                    >
+                      <td className="py-4 px-4 text-foreground font-medium text-sm">
+                        {order.id}
                       </td>
-                      <td className="py-3 px-4 font-semibold">{order.flyers.length}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{order.flyers.map(f => f.delivery).join(" • ")}</td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getPriorityBadgeClass(fastest)}`}>
-                          {fastest === "Completed" ? "Done" : `${fastest} Priority`}
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-foreground text-sm font-medium">
+                            {order.email}
+                          </span>
+                          {order.whatsapp && (
+                            <span className="text-xs text-muted-foreground">
+                              {order.whatsapp}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-foreground text-sm font-medium">
+                        {order.flyers.length}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`text-xs ${priority.color}`}>
+                          {priority.label}
                         </span>
                       </td>
-                      <td className={`py-3 px-4 font-mono font-bold ${isExpired ? "text-red-600" : ""}`}>
-                        {msToHMS(remainingMs)}
+                      <td className="py-4 px-4 text-center">
+                        <span
+                          className={`font-mono text-xs font-bold ${
+                            isExpired ? "text-primary" : "text-foreground"
+                          }`}
+                        >
+                          {msToHMS(remainingMs)}
+                        </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-4 px-4">
                         <select
                           value={order.status}
-                          onChange={(e) => ordersStore.updateOrderStatus(order.id, e.target.value as any)}
-                          className={`px-2 py-1 rounded text-xs font-semibold border-0 cursor-pointer ${getStatusColor(order.status)}`}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateOrderStatus(order.id, e.target.value as any);
+                          }}
+                          className="px-2 py-1.5 rounded text-xs border border-border bg-secondary text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
                         >
                           <option value="Pending">Pending</option>
                           <option value="Processing">Processing</option>
                           <option value="Completed">Completed</option>
                         </select>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">{formatDate(order.createdAt)}</td>
-                      <td className="py-3 px-4">
-                        <button onClick={() => setSelectedOrder(order)} className="text-primary hover:underline text-sm font-medium">
-                          View Details
+                      <td className="py-4 px-4 text-center">
+                        <button className="text-primary hover:text-primary/80 transition-colors">
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
           </div>
 
-          {/* Completed Orders */}
           {visibleOrders.completed.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-3">Completed Orders</h3>
-              <div className="overflow-x-auto">
+            <div className="mt-8 pt-8 border-t border-border/50 space-y-4">
+              <h3 className="text-lg font-bold text-foreground tracking-tight">
+                Completed Orders ({visibleOrders.completed.length})
+              </h3>
+              <div className="border border-border rounded overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Order ID</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Email</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Flyers</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Date</th>
-                      <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Action</th>
+                  <thead className="bg-secondary/20 border-b border-border">
+                    <tr>
+                      <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                        Order ID
+                      </th>
+                      <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                        Email
+                      </th>
+                      <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                        Flyers
+                      </th>
+                      <th className="text-left py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                        Date
+                      </th>
+                      <th className="text-center py-4 px-4 font-semibold text-foreground text-xs uppercase tracking-wide">
+                        Action
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {visibleOrders.completed.map(order => (
-                      <tr key={order.id} className="border-b hover:bg-secondary/50">
-                        <td className="py-3 px-4 font-semibold">{order.id}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{order.email}</td>
-                        <td className="py-3 px-4 font-semibold">{order.flyers.length}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{formatDate(order.createdAt)}</td>
-                        <td className="py-3 px-4">
-                          <button onClick={() => setSelectedOrder(order)} className="text-primary hover:underline text-sm font-medium">
-                            View Details
+                  <tbody className="divide-y divide-border/50">
+                    {visibleOrders.completed.map((order) => (
+                      <tr
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className="table-row-hover cursor-pointer"
+                      >
+                        <td className="py-4 px-4 text-foreground font-medium text-sm">
+                          {order.id}
+                        </td>
+                        <td className="py-4 px-4 text-muted-foreground text-sm">
+                          {order.email}
+                        </td>
+                        <td className="py-4 px-4 text-foreground text-sm font-medium">
+                          {order.flyers.length}
+                        </td>
+                        <td className="py-4 px-4 text-muted-foreground text-sm">
+                          {formatDate(order.createdAt)}
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <button className="text-primary hover:text-primary/80 transition-colors">
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
@@ -210,5 +321,5 @@ export const OrdersManagement = observer(() => {
         </CardContent>
       </Card>
     </div>
-  )
-})
+  );
+});
