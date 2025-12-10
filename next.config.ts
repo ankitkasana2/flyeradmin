@@ -1,10 +1,50 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true,
+
   images: {
-    domains: ["plus.unsplash.com","images.unsplash.com"], // add all external image hosts you use
-    
+    remotePatterns: [
+      // 1. Your server IP (for old local images)
+      {
+        protocol: "http",
+        hostname: "193.203.161.174",
+        port: "3007",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "193.203.161.174",
+        pathname: "/uploads/**",
+      },
+
+      // 2. Your S3 bucket
+      {
+        protocol: "https",
+        hostname: "flyer-app-bucket-2025.s3.ap-southeast-2.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.s3.ap-southeast-2.amazonaws.com",
+        pathname: "/**",
+      },
+
+      // 3. Unsplash (you already use)
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "plus.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "unsplash.com",
+      },
+    ],
   },
 };
 

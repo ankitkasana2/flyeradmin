@@ -16,7 +16,7 @@ export function FlyerCard({ flyer, onEdit, onDelete }: FlyerCardProps) {
       {/* Image */}
       <div className="relative w-full aspect-[4/5]">
         <Image
-          src={flyer.image}
+          src={flyer.image || "/placeholder.svg"}
           alt={flyer.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -49,7 +49,8 @@ export function FlyerCard({ flyer, onEdit, onDelete }: FlyerCardProps) {
         </p>
         <div className="flex justify-center items-center gap-3 mt-2 text-xs text-gray-300">
           <span className="px-3 py-1 rounded-full bg-red-600/80 text-white font-medium shadow">
-            ${flyer.price}
+            {/* $ */}
+            {flyer.price}
           </span>
           <span className="px-3 py-1 rounded-full bg-neutral-800/80 text-white/80 font-medium">
             {flyer.formType}

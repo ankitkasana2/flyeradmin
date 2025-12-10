@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import { Search, ChevronRight } from "lucide-react";
 import {
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ordersStore } from "@/stores/ordersStore";
-import { OrderDetailPage } from "./order-detail-page";
+import { OrderDetailPage, type OrderFromAPI } from "./order-detail-page";
 
 const msToHMS = (ms: number) => {
   if (ms <= 0) return "00:00:00";
@@ -24,39 +23,53 @@ const msToHMS = (ms: number) => {
   return `${two(hrs)}:${two(mins)}:${two(secs)}`;
 };
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString();
+const formatDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch (e) {
+    return 'Invalid date';
+  }
+};
 
-export const OrdersManagement = observer(() => {
-  const {
-    loading,
-    error,
-    searchTerm,
-    statusFilter,
-    selectedOrder,
-    visibleOrders,
-    setSearchTerm,
-    setStatusFilter,
-    setSelectedOrder,
-    updateOrderStatus,
-  } = ordersStore;
+interface OrdersManagementProps {
+  userRole: "designer" | "super-admin" | "admin";
+}
 
-  const [now, setNow] = useState(Date.now());
-
+export const OrdersManagement = observer(({ userRole }: OrdersManagementProps) => {
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    ordersStore.fetchOrders();
+    const interval = setInterval(() => ordersStore.fetchOrders(), 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  if (selectedOrder) {
+  if (ordersStore.selectedOrder) {
+    // Convert the Order type to OrderFromAPI type for the OrderDetailPage
+    const selectedOrder: OrderFromAPI = {
+      ...ordersStore.selectedOrder,
+      // Ensure all required fields are present
+      presenting: ordersStore.selectedOrder.presenting || '',
+      event_title: ordersStore.selectedOrder.event_title || '',
+      event_date: ordersStore.selectedOrder.event_date || new Date().toISOString(),
+      flyer_info: ordersStore.selectedOrder.flyer_info || '',
+      address_phone: ordersStore.selectedOrder.address_phone || '',
+      venue_logo: ordersStore.selectedOrder.venue_logo || null,
+      djs: ordersStore.selectedOrder.djs || [],
+      host: ordersStore.selectedOrder.host || {},
+      sponsors: ordersStore.selectedOrder.sponsors || [],
+      custom_notes: ordersStore.selectedOrder.custom_notes || '',
+      flyer_is: ordersStore.selectedOrder.flyer_is || 0,
+      createdAt: ordersStore.selectedOrder.created_at,
+    };
+
     return (
       <OrderDetailPage
         selectedOrder={selectedOrder}
-        onBack={() => setSelectedOrder(null)}
+        onBack={() => ordersStore.setSelectedOrder(null)}
       />
     );
   }
 
-  if (loading) {
+  if (ordersStore.loading && ordersStore.orders.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center space-y-4">
@@ -69,14 +82,14 @@ export const OrdersManagement = observer(() => {
     );
   }
 
-  if (error) {
+  if (ordersStore.error) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center space-y-4 max-w-md p-8">
           <h2 className="text-lg font-bold text-foreground">
             Unable to Load Orders
           </h2>
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <p className="text-sm text-muted-foreground">{ordersStore.error}</p>
           <button
             onClick={() => ordersStore.fetchOrders()}
             className="px-4 py-2 bg-primary text-primary-foreground rounded font-medium hover:bg-primary/90 transition-all"
@@ -106,20 +119,21 @@ export const OrdersManagement = observer(() => {
               Active Orders
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              {visibleOrders.active.length} active ·{" "}
-              {visibleOrders.completed.length} completed
+              {ordersStore.visibleOrders.active.length} active ·{" "}
+              {ordersStore.visibleOrders.completed.length} completed
             </CardDescription>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6 pt-6">
+          {/* Search & Filters */}
           <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search by email, phone, order ID, flyer or file name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={ordersStore.searchTerm}
+                onChange={(e) => ordersStore.setSearchTerm(e.target.value)}
                 className="pl-10 h-10 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary/50 text-sm"
               />
             </div>
@@ -128,12 +142,11 @@ export const OrdersManagement = observer(() => {
               {["All", "1H", "5H", "24H", "Completed"].map((s) => (
                 <button
                   key={s}
-                  onClick={() => setStatusFilter(s as any)}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${
-                    statusFilter === s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-foreground hover:bg-secondary/80"
-                  }`}
+                  onClick={() => ordersStore.setStatusFilter(s as any)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${ordersStore.statusFilter === s
+                    ? "bg-[#E50914] text-white"
+                    : "bg-secondary text-foreground hover:bg-secondary/80"
+                    }`}
                 >
                   {s}
                 </button>
@@ -141,6 +154,7 @@ export const OrdersManagement = observer(() => {
             </div>
           </div>
 
+          {/* Active Orders Table */}
           <div className="border border-border rounded overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-secondary/30 border-b border-border">
@@ -169,39 +183,22 @@ export const OrdersManagement = observer(() => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {visibleOrders.active.map((order) => {
-                  const { fastest, remainingMs } =
-                    ordersStore.getOrderPriority(order);
+                {ordersStore.visibleOrders.active.map((order) => {
+                  const { fastest, remainingMs } = ordersStore.getOrderPriority(order);
                   const isExpired = remainingMs <= 0 && fastest !== "Completed";
 
-                  const getPriorityDisplay = () => {
-                    switch (fastest) {
-                      case "1H":
-                        return { label: "1H", color: "text-primary font-bold" };
-                      case "5H":
-                        return {
-                          label: "5H",
-                          color: "text-foreground font-semibold",
-                        };
-                      case "24H":
-                        return { label: "24H", color: "text-muted-foreground" };
-                      default:
-                        return {
-                          label: fastest,
-                          color: "text-muted-foreground",
-                        };
-                    }
-                  };
-
-                  const priority = getPriorityDisplay();
+                  const priorityColor =
+                    fastest === "1H"
+                      ? "text-primary font-bold"
+                      : fastest === "5H"
+                        ? "text-foreground font-semibold"
+                        : "text-muted-foreground";
 
                   return (
                     <tr
                       key={order.id}
-                      onClick={() => setSelectedOrder(order)}
-                      className={`table-row-hover cursor-pointer ${
-                        isExpired ? "gentle-pulse bg-primary/5" : ""
-                      }`}
+                      className={`group relative cursor-default transition-all duration-300 ease-out hover:bg-[#E50914]/10 hover:border-l-4 hover:border-l-[#E50914] ${isExpired ? "gentle-pulse bg-primary/5" : ""
+                        }`}
                     >
                       <td className="py-4 px-4 text-foreground font-medium text-sm">
                         {order.id}
@@ -219,18 +216,15 @@ export const OrdersManagement = observer(() => {
                         </div>
                       </td>
                       <td className="py-4 px-4 text-foreground text-sm font-medium">
-                        {order.flyers.length}
+                        {order.flyers?.length || 0}
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`text-xs ${priority.color}`}>
-                          {priority.label}
-                        </span>
+                        <span className={`text-xs ${priorityColor}`}>{fastest}</span>
                       </td>
                       <td className="py-4 px-4 text-center">
                         <span
-                          className={`font-mono text-xs font-bold ${
-                            isExpired ? "text-primary" : "text-foreground"
-                          }`}
+                          className={`font-mono text-xs font-bold ${isExpired ? "text-primary" : "text-foreground"
+                            }`}
                         >
                           {msToHMS(remainingMs)}
                         </span>
@@ -238,19 +232,69 @@ export const OrdersManagement = observer(() => {
                       <td className="py-4 px-4">
                         <select
                           value={order.status}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => {
                             e.stopPropagation();
-                            updateOrderStatus(order.id, e.target.value as any);
+                            ordersStore.updateOrderStatus(order.id, e.target.value as any);
                           }}
-                          className="px-2 py-1.5 rounded text-xs border border-border bg-secondary text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
+                          className={`
+    px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer min-w-[150px]
+    transition-all duration-200 outline-none border border-[#2a2a2a]
+    shadow-[0_4px_12px_rgba(0,0,0,0.45)]
+    bg-[#181818]
+
+    ${order.status === "pending"
+                              ? "bg-red-500/20 text-red-400"
+                              : order.status === "processing"
+                                ? "bg-yellow-400/20 text-yellow-300"
+                                : "bg-green-500/20 text-green-400"
+                            }
+  `}
                         >
-                          <option value="Pending">Pending</option>
-                          <option value="Processing">Processing</option>
-                          <option value="Completed">Completed</option>
+
+                          <option
+                            value="pending"
+                            className="font-semibold"
+                            style={{
+                              backgroundColor: "#ffdddd",   // light red
+                              color: "#d10000"              // red
+                            }}
+                          >
+                            Pending
+                          </option>
+
+                          <option
+                            value="processing"
+                            className="font-semibold"
+                            style={{
+                              backgroundColor: "#fff5cc",   // light yellow
+                              color: "#b68f00"              // yellow
+                            }}
+                          >
+                            Processing
+                          </option>
+
+                          <option
+                            value="completed"
+                            className="font-semibold"
+                            style={{
+                              backgroundColor: "#ddffdd",   // light green
+                              color: "#008f2a"              // green
+                            }}
+                          >
+                            Completed
+                          </option>
                         </select>
+
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <button className="text-primary hover:text-primary/80 transition-colors">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            ordersStore.setSelectedOrder(order);
+                          }}
+                          className="text-primary hover:text-white hover:bg-[#E50914] p-2 rounded transition-all duration-200 group"
+                        >
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </td>
@@ -261,10 +305,11 @@ export const OrdersManagement = observer(() => {
             </table>
           </div>
 
-          {visibleOrders.completed.length > 0 && (
+          {/* Completed Orders Table */}
+          {ordersStore.visibleOrders.completed.length > 0 && (
             <div className="mt-8 pt-8 border-t border-border/50 space-y-4">
               <h3 className="text-lg font-bold text-foreground tracking-tight">
-                Completed Orders ({visibleOrders.completed.length})
+                Completed Orders ({ordersStore.visibleOrders.completed.length})
               </h3>
               <div className="border border-border rounded overflow-hidden">
                 <table className="w-full text-sm">
@@ -288,26 +333,25 @@ export const OrdersManagement = observer(() => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {visibleOrders.completed.map((order) => (
+                    {ordersStore.visibleOrders.completed.map((order) => (
                       <tr
                         key={order.id}
-                        onClick={() => setSelectedOrder(order)}
-                        className="table-row-hover cursor-pointer"
+                        className="group relative cursor-default transition-all duration-300 ease-out hover:bg-[#E50914]/10 hover:border-l-4 hover:border-l-[#E50914]"
                       >
                         <td className="py-4 px-4 text-foreground font-medium text-sm">
                           {order.id}
                         </td>
-                        <td className="py-4 px-4 text-muted-foreground text-sm">
-                          {order.email}
-                        </td>
-                        <td className="py-4 px-4 text-foreground text-sm font-medium">
-                          {order.flyers.length}
-                        </td>
-                        <td className="py-4 px-4 text-muted-foreground text-sm">
-                          {formatDate(order.createdAt)}
-                        </td>
+                        <td className="py-4 px-4 text-muted-foreground text-sm">{order.email}</td>
+                        <td className="py-4 px-4 text-foreground text-sm font-medium">{order.flyers?.length ?? 0}</td>
+                        <td className="py-4 px-4 text-muted-foreground text-sm">{formatDate(order.createdAt ?? "")}</td>
                         <td className="py-4 px-4 text-center">
-                          <button className="text-primary hover:text-primary/80 transition-colors">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              ordersStore.setSelectedOrder(order);
+                            }}
+                            className="text-primary hover:text-white hover:bg-[#E50914] p-2 rounded transition-all duration-200"
+                          >
                             <ChevronRight className="w-4 h-4" />
                           </button>
                         </td>

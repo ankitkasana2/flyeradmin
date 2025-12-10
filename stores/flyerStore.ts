@@ -26,7 +26,7 @@ class FlyerStore {
         category: f.categories?.[0] || "Uncategorized",
         price: f.price,
         formType: f.form_type,
-        image: f.image_url,
+        image: f.image_url || "/placeholder.svg",
         recentlyAdded: !!f.recently_added,
       }));
 
@@ -89,8 +89,33 @@ class FlyerStore {
     }
   }
 
-  deleteFlyer(flyerId: string) {
-    this.flyers = this.flyers.filter(f => f.id !== flyerId);
+  async deleteFlyer(flyerId: string) {
+    this.loading = true;
+    this.error = null;
+
+    try {
+      const res = await fetch(`http://193.203.161.174:3007/api/flyers/${flyerId}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) throw new Error("Failed to delete flyer");
+
+      // Remove from local state after successful API deletion
+      runInAction(() => {
+        this.flyers = this.flyers.filter(f => f.id !== flyerId);
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message;
+      });
+      return { success: false, error: err.message };
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
+    }
   }
 
   getFlyersByCategory(category: string): Flyer[] {

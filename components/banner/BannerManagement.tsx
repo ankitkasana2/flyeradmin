@@ -36,6 +36,10 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
     description: "",
     imageFile: null as File | null,
     previewImage: "", // base64 for preview
+    buttonText: "GET IT",
+    buttonEnabled: true,
+    linkType: "category" as "category" | "flyer" | "external" | "none",
+    linkValue: "",
   });
 
   const canEdit = userRole !== "designer";
@@ -76,7 +80,8 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
   const toggleActive = async (id: number) => {
     const banner = bannerStore.banners.find((b) => b.id === id);
     if (banner) {
-      await bannerStore.toggleStatus(id, banner.status === 1 ? 0 : 1);
+      const newStatus = banner.status ? 0 : 1;
+      await bannerStore.toggleStatus(id, newStatus);
     }
   };
 
@@ -104,6 +109,10 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
         description: banner.description,
         imageFile: null,
         previewImage: banner.imageUrl, // full URL from store
+        buttonText: banner.button_text || "GET IT",
+        buttonEnabled: banner.button_enabled,
+        linkType: banner.link_type || "category",
+        linkValue: banner.link_value || "",
       });
     } else {
       setEditingId(null);
@@ -112,6 +121,10 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
         description: "",
         imageFile: null,
         previewImage: "",
+        buttonText: "GET IT",
+        buttonEnabled: true,
+        linkType: "category",
+        linkValue: "",
       });
     }
     setIsModalOpen(true);
@@ -123,11 +136,24 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
       return;
     }
 
+    if (formData.buttonEnabled && !formData.linkValue.trim() && formData.linkType !== "none") {
+      alert("Please fill link value when button is enabled!");
+      return;
+    }
+
     const formDataToSend = new FormData();
     formDataToSend.append("title", formData.title);
     formDataToSend.append("description", formData.description);
     if (formData.imageFile) {
       formDataToSend.append("image", formData.imageFile);
+    }
+    
+    // New fields
+    formDataToSend.append("button_text", formData.buttonText);
+    formDataToSend.append("button_enabled", formData.buttonEnabled ? "1" : "0");
+    formDataToSend.append("link_type", formData.linkType);
+    if (formData.linkValue) {
+      formDataToSend.append("link_value", formData.linkValue);
     }
 
     try {
@@ -183,7 +209,7 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
 
           <div className="space-y-4">
             {bannerStore.banners
-              .filter((b) => b.status === 1) // sirf active dikhaye (optional)
+              .filter((b) => b.status === true) // sirf active dikhaye (optional)
               .map((banner) => (
                 <div
                   key={banner.id}
@@ -205,9 +231,21 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
                     <div className="min-w-0">
                       <p className="font-semibold text-foreground">{banner.title}</p>
                       <p className="text-sm text-muted-foreground truncate">{banner.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Status: {banner.status === 1 ? "Active" : "Inactive"}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          Status: {banner.status ? "Active" : "Inactive"}
+                        </span>
+                        {banner.button_enabled && (
+                          <span className="text-xs text-green-600 font-medium">
+                            Button: {banner.button_text || "GET IT"}
+                          </span>
+                        )}
+                      </div>
+                      {banner.button_enabled && banner.link_type !== "none" && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Links to: {banner.link_type} → {banner.link_value}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -218,7 +256,7 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
                           onClick={() => toggleActive(banner.id)}
                           className="p-2 hover:bg-primary/20 rounded transition-colors"
                         >
-                          {banner.status === 1 ? (
+                          {banner.status ? (
                             <Eye className="w-5 h-5 text-primary" />
                           ) : (
                             <EyeOff className="w-5 h-5 text-muted-foreground" />
@@ -303,6 +341,72 @@ export const BannerManagement = observer(({ userRole }: BannerManagementProps) =
                       className="w-full h-32 object-cover rounded-lg border border-border"
                     />
                   </div>
+                )}
+              </div>
+
+              {/* Button Configuration Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Button Configuration</h3>
+                
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="buttonEnabled"
+                    checked={formData.buttonEnabled}
+                    onChange={(e) => setFormData({ ...formData, buttonEnabled: e.target.checked })}
+                    className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                  />
+                  <label htmlFor="buttonEnabled" className="text-sm font-medium text-foreground">
+                    Enable Button
+                  </label>
+                </div>
+
+                {formData.buttonEnabled && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Button Text</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., GET IT, SHOP NOW, EXPLORE"
+                        value={formData.buttonText}
+                        onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Link Type</label>
+                      <select
+                        value={formData.linkType}
+                        onChange={(e) => setFormData({ ...formData, linkType: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="category">Category</option>
+                        <option value="flyer">Flyer</option>
+                        <option value="external">External URL</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+
+                    {formData.linkType !== "none" && (
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {formData.linkType === "category" ? "Category Name" : formData.linkType === "flyer" ? "Flyer Name" : "External URL"}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={
+                            formData.linkType === "category" ? "e.g., Ladies Night, Summer, Party" :
+                            formData.linkType === "flyer" ? "e.g., Summer Sale, Happy Hour" :
+                            "e.g., https://example.com"
+                          }
+                          value={formData.linkValue}
+                          onChange={(e) => setFormData({ ...formData, linkValue: e.target.value })}
+                          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
