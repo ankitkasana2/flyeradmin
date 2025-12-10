@@ -51,23 +51,43 @@ export function CategorySection({
   ];
 
   // ✅ Inject local demo flyers ONLY for the "All" category
-  useEffect(() => {
-    if (category === "All") {
-      const localFlyers: Flyer[] = LOCAL_IMAGES.map((img, i) => ({
-        id: `local-${i}`,
-        title: `Flyer ${i + 1}`,
-        category: "All", // ✅ Required by Flyer interface
-        price: 10,       // ✅ Must be one of: 10 | 15 | 40
-        formType: "With Image",
-        image: img,
-        recentlyAdded: false, // ✅ Required by Flyer interface
-      }));
+  // useEffect(() => {
+  //   if (category === "All") {
+  //     const localFlyers: Flyer[] = LOCAL_IMAGES.map((img, i) => ({
+  //       id: `local-${i}`,
+  //       title: `Flyer ${i + 1}`,
+  //       category: "All", // ✅ Required by Flyer interface
+  //       price: 10,       // ✅ Must be one of: 10 | 15 | 40
+  //       formType: "With Image",
+  //       image: img,
+  //       recentlyAdded: false, // ✅ Required by Flyer interface
+  //     }));
 
-      setDisplayFlyers(localFlyers);
-    } else {
-      setDisplayFlyers(flyers);
-    }
-  }, [category, flyers]);
+  //     setDisplayFlyers(localFlyers);
+  //   } else {
+  //     setDisplayFlyers(flyers);
+  //   }
+  // }, [category, flyers]);
+
+  useEffect(() => {
+  if (category === "All") {
+    const localFlyers: Flyer[] = LOCAL_IMAGES.map((img, i) => ({
+      id: `local-${i}`,
+      title: `Flyer ${i + 1}`,
+      category: "All",
+      price: 10,
+      formType: "With Image",
+      image: img,
+      recentlyAdded: false,
+    }));
+
+    // 👉 Always show local flyers for "All" category, even if no real flyers
+    setDisplayFlyers(localFlyers);
+  } else {
+    setDisplayFlyers(flyers);
+  }
+}, [category, flyers]);
+
 
   // Scroll logic
   const handleScroll = () => {
@@ -88,7 +108,26 @@ export function CategorySection({
     }
   };
 
-  if (displayFlyers.length === 0) return null;
+  if (displayFlyers.length === 0) return (
+    <section className="space-y-6">
+      <div className="flex items-end gap-4">
+        <div className="flex-1">
+          <h2 className="text-3xl font-black text-white tracking-tight">
+            {category}
+          </h2>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="h-1 w-12 bg-gradient-to-r from-red-600 to-red-400 rounded-full"></div>
+            <p className="text-sm font-medium text-gray-400">
+              0 flyers
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="text-center py-12 text-gray-400">
+        <p>No flyers available in this category</p>
+      </div>
+    </section>
+  );
 
   return (
     <section className="space-y-6">

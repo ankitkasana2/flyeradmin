@@ -23,7 +23,7 @@ export function FlyerCard({ flyer }: FlyerCardProps) {
       <div className="relative w-full h-48 overflow-hidden bg-muted">
         <Image
           src={flyer.image || "/placeholder.svg"}
-          alt={flyer.title}
+          alt={flyer.title || "flyer"}
           fill
           className="object-cover hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

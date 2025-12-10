@@ -55,10 +55,13 @@ const LiveFlyers = observer(() => {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingFlyer) {
-      flyerStore.deleteFlyer(deletingFlyer.id);
-      setDeletingFlyer(null);
+      const result = await flyerStore.deleteFlyer(deletingFlyer.id);
+      if (result.success) {
+        setDeletingFlyer(null);
+      }
+      // Error handling is managed by the dialog component
     }
   };
 
@@ -83,7 +86,9 @@ const LiveFlyers = observer(() => {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-16">
-          {CATEGORIES.map((category) => (
+          {CATEGORIES.filter((category) => 
+            category === "All" || flyersByCategory[category]?.length > 0
+          ).map((category) => (
             <CategorySection
               key={category}
               category={category}

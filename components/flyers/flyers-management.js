@@ -42,12 +42,13 @@ export function FlyersManagement({ userRole }) {
               className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2"
             >
               <Upload className="w-4 h-4" />
-              Bulk Upload
+              {/* Bulk  */}
+              Upload Flyers
             </Button>
-            <Button onClick={() => setShowForm(true)} className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2">
+            {/* <Button onClick={() => setShowForm(true)} className="bg-[#E50914] text-white hover:bg-[#C40812] gap-2">
               <Plus className="w-4 h-4" />
               New Flyer
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>

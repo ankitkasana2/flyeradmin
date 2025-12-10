@@ -7,12 +7,17 @@ const UPLOADS_BASE = "http://193.203.161.174:3007/uploads/banners";
 export interface IBanner {
   id: number;
   title: string;
-  description: string;
+  description: string | null;
   image: string;
-  status: number;
+  status: boolean;
   created_at?: string;
   updated_at?: string;
   imageUrl: string;
+  button_text?: string | null;
+  button_enabled: boolean;
+  link_type: "category" | "flyer" | "external" | "none";
+  link_value?: string | null;
+  display_order?: number;
 }
 
 class BannerStore {
@@ -34,7 +39,7 @@ class BannerStore {
       runInAction(() => {
         this.banners = json.data.map((b: any) => ({
           ...b,
-          imageUrl: `${UPLOADS_BASE}/${b.image}`,
+          imageUrl: b.image_url || `${UPLOADS_BASE}/${b.image}`,
         }));
         this.loading = false;
       });
@@ -100,7 +105,7 @@ class BannerStore {
 
       runInAction(() => {
         const banner = this.banners.find((b) => b.id === id);
-        if (banner) banner.status = status;
+        if (banner) banner.status = status === 1;
       });
     } catch (err: any) {
       runInAction(() => this.error = err.message);

@@ -2,22 +2,46 @@
 import { makeAutoObservable, runInAction } from "mobx"
 
 type DeliveryType = "1H" | "5H" | "24H"
-type OrderStatus = "Pending" | "Processing" | "Completed"
-
-interface Flyer {
-  id: string
-  name?: string
-  fileName?: string
-  delivery: DeliveryType
-}
+type OrderStatus = "pending" | "processing" | "completed"
 
 export interface Order {
-  id: string
-  email: string
+  id: number
+  email: string | null
   whatsapp?: string
-  flyers: Flyer[]
-  createdAt: string
+  name?: string
+  paymentMethod?: string
+  totalAmount?: string
   status: OrderStatus
+  created_at: string
+  updated_at: string
+  web_user_id: string | null
+
+  // Fields from OrderFromAPI
+  presenting: string
+  event_title: string
+  event_date: string
+  flyer_info: string
+  address_phone: string
+  venue_logo: string | null
+  djs: (string | { name: string | { name: string }; image?: string | null })[]
+  host: Record<string, any> | { name: string | { name: string }; image?: string | null }
+  sponsors: (string | { name: string | { name: string }; image?: string | null })[]
+  custom_notes: string
+  flyer_is: number
+  delivery_time?: string
+  total_price?: string
+  adminNotes?: string
+
+  // For backward compatibility
+  flyers?: Array<{
+    id: string
+    name?: string
+    fileName?: string
+    delivery: DeliveryType
+  }>
+
+  // Alias for created_at to maintain backward compatibility
+  createdAt?: string
 }
 
 const DELIVERY_PRIORITY_MAP: Record<DeliveryType, number> = {
@@ -31,7 +55,7 @@ class OrdersStore {
   loading = true
   error: string | null = null
   searchTerm = ""
-  statusFilter: "All" | OrderStatus = "All"
+  statusFilter: "All" | "1H" | "5H" | "24H" | "Completed" = "All"
   selectedOrder: Order | null = null
   now = Date.now()
 
@@ -48,7 +72,7 @@ class OrdersStore {
     this.searchTerm = term
   }
 
-  setStatusFilter(filter: "All" | OrderStatus) {
+  setStatusFilter(filter: "All" | "1H" | "5H" | "24H" | "Completed") {
     this.statusFilter = filter
   }
 
@@ -81,39 +105,62 @@ class OrdersStore {
     }
   }
 
-  async updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+  async updateOrderStatus(orderId: number, newStatus: OrderStatus) {
     const order = this.orders.find(o => o.id === orderId)
     if (!order) return
 
+    // Store old status for rollback
+    const oldStatus = order.status
+
+    // Optimistic update
     order.status = newStatus
 
     try {
-      await fetch(`http://193.203.161.174:3007/api/orders/${orderId.replace('ORD-', '')}`, {
+      const response = await fetch(`http://193.203.161.174:3007/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus.toLowerCase() })
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Status updated successfully:', data)
     } catch (err) {
       console.error("Failed to update status", err)
-      // Optionally revert on failure
+      // Rollback on failure
+      order.status = oldStatus
+      alert('Failed to update order status. Please try again.')
     }
   }
 
   get visibleOrders() {
     const filtered = this.orders.filter(order => {
-      if (this.statusFilter !== "All" && order.status !== this.statusFilter) return false
+      // Filter by delivery time or status
+      if (this.statusFilter !== "All") {
+        if (this.statusFilter === "Completed") {
+          if (order.status !== "completed") return false
+        } else if (this.statusFilter === "1H" || this.statusFilter === "5H" || this.statusFilter === "24H") {
+          // Filter by delivery time
+          const orderDeliveryTime = this.parseDeliveryTime(order.delivery_time)
+          if (orderDeliveryTime !== this.statusFilter) return false
+        }
+      }
 
       const q = this.searchTerm.trim().toLowerCase()
       if (!q) return true
 
-      const matchesOrder = order.id.toLowerCase().includes(q) ||
-        order.email.toLowerCase().includes(q) ||
+      const matchesOrder =
+        String(order.id).toLowerCase().includes(q) ||
+        (order.email || '').toLowerCase().includes(q) ||
         (order.whatsapp || "").toLowerCase().includes(q)
 
-      const matchesFlyer = order.flyers.some(f =>
+      const matchesFlyer = order.flyers?.some(f =>
         (f.name || "").toLowerCase().includes(q) ||
         (f.fileName || "").toLowerCase().includes(q)
-      )
+      ) || false
 
       return matchesOrder || matchesFlyer
     })
@@ -122,7 +169,7 @@ class OrdersStore {
     const completed: Order[] = []
 
     filtered.forEach(order => {
-      if (order.status === "Completed") completed.push(order)
+      if (order.status === "completed") completed.push(order)
       else active.push(order)
     })
 
@@ -136,34 +183,41 @@ class OrdersStore {
       const priDiff = DELIVERY_PRIORITY_MAP[aInfo.fastest as DeliveryType] - DELIVERY_PRIORITY_MAP[bInfo.fastest as DeliveryType]
       if (priDiff !== 0) return priDiff
 
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      return new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
     })
 
-    completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    completed.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
 
     return { active, completed }
   }
 
   getOrderPriority(order: Order) {
-    if (order.status === "Completed") return { fastest: "Completed" as const, remainingMs: 0 }
+    if (order.status === "completed") return { fastest: "Completed" as const, remainingMs: 0 }
 
-    const fastest = order.flyers.reduce((acc, f) =>
+    const fastest = (order.flyers ?? []).reduce((acc, f) =>
       DELIVERY_PRIORITY_MAP[f.delivery] < DELIVERY_PRIORITY_MAP[acc] ? f.delivery : acc
-    , order.flyers[0]?.delivery || "24H")
+      , order.flyers?.[0]?.delivery || "24H")
 
     const hours = fastest === "1H" ? 1 : fastest === "5H" ? 5 : 24
-    const deadline = new Date(order.createdAt).getTime() + hours * 3600000
+    const deadline = new Date(order.createdAt ?? 0).getTime() + hours * 3600000
     const remainingMs = deadline - this.now
 
     return { fastest, remainingMs }
   }
+
+  parseDeliveryTime(deliveryStr?: string | null): DeliveryType {
+    if (!deliveryStr) return "24H"
+    if (deliveryStr.includes("1 Hour") || deliveryStr.includes("1H")) return "1H"
+    if (deliveryStr.includes("5 Hours") || deliveryStr.includes("5H")) return "5H"
+    return "24H"
+  }
 }
 
-// Transform function (same as before)
+// Transform function to convert API response to Order type
 function transformApiOrder(apiOrder: any): Order {
   const delivery = parseDeliveryTime(apiOrder.delivery_time)
 
-  const flyers: Flyer[] = [
+  const flyers = [
     {
       id: `F-${apiOrder.id}`,
       name: apiOrder.event_title || "Event Flyer",
@@ -179,12 +233,32 @@ function transformApiOrder(apiOrder: any): Order {
   ]
 
   return {
-    id: `ORD-${apiOrder.id}`,
-    email: apiOrder.email || `order${apiOrder.id}@example.com`,
-    whatsapp: undefined,
-    flyers,
-    createdAt: new Date(apiOrder.created_at).toISOString(),
+    id: Number(apiOrder.id), // Ensure id is a number
+    email: apiOrder.email || null,
+    whatsapp: apiOrder.whatsapp || undefined,
+    name: apiOrder.name || undefined,
+    paymentMethod: apiOrder.payment_method || undefined,
+    totalAmount: apiOrder.total_amount ? String(apiOrder.total_amount) : undefined,
     status: capitalizeStatus(apiOrder.status),
+    created_at: apiOrder.created_at || new Date().toISOString(),
+    updated_at: apiOrder.updated_at || new Date().toISOString(),
+    web_user_id: apiOrder.web_user_id || null,
+    presenting: apiOrder.presenting || '',
+    event_title: apiOrder.event_title || '',
+    event_date: apiOrder.event_date || '',
+    flyer_info: apiOrder.flyer_info || '',
+    address_phone: apiOrder.address_phone || '',
+    venue_logo: apiOrder.venue_logo || null,
+    djs: Array.isArray(apiOrder.djs) ? apiOrder.djs : [],
+    host: apiOrder.host || {},
+    sponsors: Array.isArray(apiOrder.sponsors) ? apiOrder.sponsors : [],
+    custom_notes: apiOrder.custom_notes || '',
+    flyer_is: typeof apiOrder.flyer_is === 'number' ? apiOrder.flyer_is : 0,
+    delivery_time: apiOrder.delivery_time || undefined,
+    total_price: apiOrder.total_price ? String(apiOrder.total_price) : undefined,
+    adminNotes: apiOrder.admin_notes || undefined,
+    flyers,
+    createdAt: apiOrder.created_at || new Date().toISOString(),
   }
 }
 
@@ -196,7 +270,7 @@ function parseDeliveryTime(deliveryStr: string | null): DeliveryType {
 }
 
 function capitalizeStatus(status: string): OrderStatus {
-  return (status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()) as OrderStatus
+  return status.toLowerCase() as OrderStatus
 }
 
 export const ordersStore = new OrdersStore()
