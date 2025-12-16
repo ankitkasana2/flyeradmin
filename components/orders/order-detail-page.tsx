@@ -56,6 +56,12 @@ export interface OrderFromAPI {
   createdAt?: string;
 }
 
+interface FlyerDetails {
+  id: number;
+  title: string;
+  image_url: string;
+}
+
 interface OrderDetailPageProps {
   selectedOrder: OrderFromAPI;
   onBack: () => void;
@@ -69,6 +75,24 @@ export function OrderDetailPage({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState(selectedOrder?.custom_notes || selectedOrder?.adminNotes || "");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [flyerDetails, setFlyerDetails] = useState<FlyerDetails | null>(null);
+
+  useEffect(() => {
+    if (selectedOrder.flyer_is) {
+      const fetchFlyerDetails = async () => {
+        try {
+          const res = await fetch(`http://193.203.161.174:3007/api/flyers/${selectedOrder.flyer_is}`);
+          if (res.ok) {
+            const data = await res.json();
+            setFlyerDetails(data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch flyer details:", error);
+        }
+      };
+      fetchFlyerDetails();
+    }
+  }, [selectedOrder.flyer_is]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -396,6 +420,51 @@ export function OrderDetailPage({
             </div>
           </CardContent>
         </Card>
+
+        {/* Selected Flyer Design */}
+        {flyerDetails && (
+          <Card className="border border-border bg-card">
+            <CardHeader className="border-b border-border pb-4">
+              <CardTitle className="text-base font-bold text-foreground tracking-tight">
+                Selected Flyer Design
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                <div className="relative group rounded-lg overflow-hidden border border-border max-w-[200px] w-full bg-secondary/30">
+                  <div className="aspect-[3/4] relative">
+                    <img
+                      src={flyerDetails.image_url}
+                      alt={flyerDetails.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 text-xs font-medium"
+                        onClick={() => downloadImage(flyerDetails.image_url, `flyer_template_${flyerDetails.id}.png`)}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1.5" /> Download
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{flyerDetails.title}</h3>
+                    <Badge variant="outline" className="mt-2 text-xs font-normal text-muted-foreground">
+                      Template ID: {flyerDetails.id}
+                    </Badge>
+                  </div>
+                  <div className="p-4 bg-secondary/50 rounded-lg border border-border/50 text-sm text-muted-foreground">
+                    <p>This is the design template selected by the customer for their order.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tumhara original Flyers section with countdown */}
         <div className="space-y-4">
