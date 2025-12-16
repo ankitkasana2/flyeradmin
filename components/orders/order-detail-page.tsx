@@ -1,11 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Copy, CheckCircle2, Upload, Send } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Upload, Send, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ordersStore } from "@/stores/ordersStore";
+
+const BASE_IMAGE_URL = "http://193.203.161.174:3007";
+
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  if (path.startsWith("/")) return `${BASE_IMAGE_URL}${path}`;
+  return `${BASE_IMAGE_URL}/${path}`;
+};
 
 export interface OrderFromAPI {
   id: number;
@@ -117,7 +126,87 @@ export function OrderDetailPage({
       hour: "2-digit",
       minute: "2-digit",
     });
-  // alert(JSON.stringify(selectedOrder));
+
+
+  const downloadImage = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
+  const getNameAndImage = (item: any) => {
+    let name = "";
+    let image = null;
+
+    if (typeof item === 'string') {
+      name = item;
+    } else if (typeof item === 'object' && item !== null) {
+      // Extract Name
+      if ('name' in item) {
+        const n = item.name;
+        if (typeof n === 'string') name = n;
+        else if (typeof n === 'object' && n !== null && 'name' in n) name = String((n as any).name);
+        else if (n === null) name = "";
+        else name = String(n);
+      }
+
+      // Extract Image
+      if ('image' in item && typeof item.image === 'string') {
+        image = getImageUrl(item.image);
+      }
+    }
+    return { name, image };
+  };
+
+  const renderAssetCard = (item: any, type: string, index: number) => {
+    const { name, image } = getNameAndImage(item);
+
+    // If no image and no name, skip
+    if (!image && !name) return null;
+
+    return (
+      <div key={`${type}-${index}`} className="group relative bg-secondary/30 border border-border rounded-lg overflow-hidden flex flex-col">
+        {image ? (
+          <div className="relative aspect-square bg-black/5">
+            <img src={image} alt={name || type} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 text-xs font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadImage(image!, `${type}_${index + 1}.png`);
+                }}
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Download
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="aspect-square bg-secondary flex items-center justify-center text-muted-foreground p-4 text-center">
+            <span className="text-xs italic">No Image</span>
+          </div>
+        )}
+        <div className="p-3 border-t border-border bg-card/50">
+          <p className="text-xs font-semibold text-foreground truncate" title={name}>{name || "No Name"}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{type}</p>
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="min-h-screen bg-background pb-12">
       <div className="sticky top-0 bg-background/95 border-b border-border z-50 backdrop-blur-sm">
@@ -255,123 +344,56 @@ export function OrderDetailPage({
               ))}
             </div>
 
-            {/* DJs */}
-            {selectedOrder.djs && selectedOrder.djs.length > 0 && (
-              <div className="mt-6">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">DJ Lineup</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedOrder.djs.map((dj, i) => {
-                    // Safely extract DJ name - ensure it's always a string
-                    let djName = 'Unknown DJ';
-                    if (typeof dj === 'string') {
-                      djName = dj || 'Unknown DJ';
-                    } else if (typeof dj === 'object' && dj !== null && 'name' in dj) {
-                      const nameValue = dj.name;
-                      if (typeof nameValue === 'string') {
-                        djName = nameValue || 'Unknown DJ';
-                      } else if (typeof nameValue === 'object' && nameValue !== null && 'name' in nameValue) {
-                        // Handle nested { name: { name: "value" } } structure
-                        const innerName = typeof nameValue.name === 'string' ? nameValue.name : String(nameValue.name);
-                        djName = innerName || 'Unknown DJ';
-                      } else if (typeof nameValue === 'object' && nameValue !== null) {
-                        djName = JSON.stringify(nameValue);
-                      } else {
-                        djName = String(nameValue) || 'Unknown DJ';
-                      }
-                    }
+            {/* Event Visual Assets Grid */}
+            <div className="mt-8 border-t border-border pt-6">
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-tight mb-4 flex items-center gap-2">
+                <span className="bg-primary/10 text-primary p-1.5 rounded">Event Visuals</span>
+              </h3>
 
-                    const djImage = typeof dj === 'object' && dj !== null && 'image' in dj && typeof dj.image === 'string'
-                      ? dj.image
-                      : null;
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {/* Venue Logo */}
+                {selectedOrder.venue_logo && (
+                  <div className="group relative bg-secondary/30 border border-border rounded-lg overflow-hidden flex flex-col">
+                    <div className="relative aspect-square bg-white/5 p-4 flex items-center justify-center">
+                      <img
+                        src={getImageUrl(selectedOrder.venue_logo) || ""}
+                        alt="Venue Logo"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 text-xs font-medium"
+                          onClick={() => downloadImage(getImageUrl(selectedOrder.venue_logo)!, 'venue_logo.png')}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1.5" /> Download
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 border-t border-border bg-card/50">
+                      <p className="text-xs font-semibold text-foreground">Venue Logo</p>
+                    </div>
+                  </div>
+                )}
 
-                    return (
-                      <Badge key={i} variant="secondary" className="py-1.5 px-4 flex items-center gap-2">
-                        {djImage && (
-                          <img src={djImage} alt={djName} className="w-5 h-5 rounded-full object-cover" />
-                        )}
-                        {djName}
-                      </Badge>
-                    );
-                  })}
-                </div>
+                {/* Host */}
+                {selectedOrder.host && renderAssetCard(selectedOrder.host, "Host", 0)}
+
+                {/* DJs */}
+                {selectedOrder.djs && selectedOrder.djs.map((dj, i) => renderAssetCard(dj, "DJ", i))}
+
+                {/* Sponsors */}
+                {selectedOrder.sponsors && selectedOrder.sponsors.map((s, i) => renderAssetCard(s, "Sponsor", i))}
               </div>
-            )}
 
-            {/* Sponsors */}
-            {selectedOrder.sponsors && selectedOrder.sponsors.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Sponsors</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedOrder.sponsors.map((s, i) => {
-                    // Safely extract sponsor name - ensure it's always a string
-                    let sponsorName = 'Unknown Sponsor';
-                    if (typeof s === 'string') {
-                      sponsorName = s || 'Unknown Sponsor';
-                    } else if (typeof s === 'object' && s !== null && 'name' in s) {
-                      const nameValue = s.name;
-                      if (typeof nameValue === 'string') {
-                        sponsorName = nameValue || 'Unknown Sponsor';
-                      } else if (typeof nameValue === 'object' && nameValue !== null && 'name' in nameValue) {
-                        // Handle nested { name: { name: "value" } } structure
-                        const innerName = typeof nameValue.name === 'string' ? nameValue.name : String(nameValue.name);
-                        sponsorName = innerName || 'Unknown Sponsor';
-                      } else if (typeof nameValue === 'object' && nameValue !== null) {
-                        sponsorName = JSON.stringify(nameValue);
-                      } else {
-                        sponsorName = String(nameValue) || 'Unknown Sponsor';
-                      }
-                    }
-
-                    const sponsorImage = typeof s === 'object' && s !== null && 'image' in s && typeof s.image === 'string'
-                      ? s.image
-                      : null;
-
-                    return (
-                      <Badge key={i} variant="outline" className="py-1.5 px-4 flex items-center gap-2">
-                        {sponsorImage && (
-                          <img src={sponsorImage} alt={sponsorName} className="w-5 h-5 rounded-full object-cover" />
-                        )}
-                        {sponsorName}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Host */}
-            {selectedOrder.host && typeof selectedOrder.host === 'object' && Object.keys(selectedOrder.host).length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Host</p>
-                <div className="flex flex-wrap gap-2">
-                  {(() => {
-                    // Safely extract host name - ensure it's always a string
-                    let hostName = 'N/A';
-                    if ('name' in selectedOrder.host) {
-                      const nameValue = selectedOrder.host.name;
-                      hostName = typeof nameValue === 'string' ? nameValue :
-                        typeof nameValue === 'object' && nameValue !== null ? JSON.stringify(nameValue) :
-                          String(nameValue);
-                    } else {
-                      hostName = JSON.stringify(selectedOrder.host);
-                    }
-
-                    const hostImage = 'image' in selectedOrder.host && typeof selectedOrder.host.image === 'string'
-                      ? selectedOrder.host.image
-                      : null;
-
-                    return (
-                      <Badge variant="default" className="py-1.5 px-4 flex items-center gap-2">
-                        {hostImage && (
-                          <img src={hostImage} alt={hostName} className="w-5 h-5 rounded-full object-cover" />
-                        )}
-                        {hostName}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
+              {(!selectedOrder.venue_logo &&
+                (!selectedOrder.djs || selectedOrder.djs.length === 0) &&
+                (!selectedOrder.host || Object.keys(selectedOrder.host).length === 0) &&
+                (!selectedOrder.sponsors || selectedOrder.sponsors.length === 0)) && (
+                  <div className="text-sm text-muted-foreground italic pl-1">No visual assets available for this order.</div>
+                )}
+            </div>
           </CardContent>
         </Card>
 
